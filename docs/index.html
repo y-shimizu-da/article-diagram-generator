@@ -494,7 +494,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateKeyStatus();
 
   // --- Gemini API Call ---
-  async function callGemini(prompt, maxTokens = 4096) {
+  async function callGemini(prompt, maxTokens = 16384) {
     const apiKey = getApiKey();
     if (!apiKey) {
       throw new Error("APIキーが設定されていません。上部のフィールドにGemini APIキーを入力してください。");
@@ -507,7 +507,10 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: maxTokens },
+          generationConfig: {
+            maxOutputTokens: maxTokens,
+            thinkingConfig: { thinkingBudget: 1024 },
+          },
         }),
       }
     );
