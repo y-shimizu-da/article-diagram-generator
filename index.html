@@ -397,14 +397,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let imageData = null;
     let textContent = "";
     for (const part of parts) {
-      if (part.inlineData) {
-        imageData = part.inlineData; // { mimeType, data (base64) }
+      // Handle both camelCase and snake_case keys from API
+      const inline = part.inlineData || part.inline_data;
+      if (inline) {
+        imageData = {
+          mimeType: inline.mimeType || inline.mime_type || "image/png",
+          data: inline.data,
+        };
       }
       if (part.text) {
         textContent += part.text;
       }
     }
-    if (!imageData) throw new Error("画像が生成されませんでした。プロンプトを変更して再試行してください。");
+    if (!imageData) {
+      // Show part keys for debugging
+      const partKeys = parts.map(p => Object.keys(p).join(",")).join(" | ");
+      throw new Error("画像が生成されませんでした。レスポンス構造: [" + partKeys + "] テキスト: " + textContent.substring(0, 150));
+    }
     return { imageData, textContent };
   }
 
@@ -649,8 +658,8 @@ ${section.content}
       const d = generatedDiagrams[i];
       const card = document.createElement("div");
       card.className = "diagram-card";
-      const imgSrc = `data:${d.imageData.mimeType || d.imageData.mime_type || "image/png"};base64,${d.imageData.data}`;
 
+      // Build card structure without embedding base64 in template literal
       card.innerHTML = `
         <div class="diagram-card-header">
           <h3>${esc(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(d.typeName)}</span></h3>
@@ -658,11 +667,29 @@ ${section.content}
             <button class="btn-sm" data-action="dl-png" data-index="${i}">PNGダウンロード</button>
           </div>
         </div>
-        <div class="diagram-card-body">
-          <img src="${imgSrc}" alt="${esc(d.title)}">
-        </div>
+        <div class="diagram-card-body"></div>
         <div class="diagram-summary">${esc(d.summary)}</div>
       `;
+
+      // Create img element separately to avoid innerHTML size issues with base64
+      const img = document.createElement("img");
+      const mimeType = d.imageData.mimeType || d.imageData.mime_type || "image/png";
+      // Convert base64 to blob URL for better performance
+      try {
+        const byteChars = atob(d.imageData.data);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+        const blob = new Blob([byteArray], { type: mimeType });
+        img.src = URL.createObjectURL(blob);
+      } catch (e) {
+        // Fallback to data URI
+        img.src = `data:${mimeType};base64,${d.imageData.data}`;
+      }
+      img.alt = d.title;
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "8px";
+      card.querySelector(".diagram-card-body").appendChild(img);
+
       diagramsOutput.appendChild(card);
     }
   }
