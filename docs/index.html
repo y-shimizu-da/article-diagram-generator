@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>記事広告 作図生成ツール</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    header { text-align: center; margin-bottom: 32px; }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
+    .subtitle { color: #666; margin-top: 6px; font-size: 0.95rem; }
+
+    /* API Key Bar */
+    .api-key-bar {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 16px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .api-key-bar label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      white-space: nowrap;
+    }
+    .api-key-bar input {
+      flex: 1;
+      min-width: 200px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+    .api-key-bar input:focus { outline: none; border-color: #4361ee; }
+    .api-key-bar .status {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .api-key-bar .status.saved { background: #e8f5e9; color: #2e7d32; }
+    .api-key-bar .status.empty { background: #fff3e0; color: #e65100; }
+    .api-key-bar .btn-save-key {
+      padding: 8px 16px;
+      background: #4361ee;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .api-key-bar .btn-save-key:hover { background: #3651d4; }
+
+    /* Steps */
+    .step {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+      overflow: hidden;
+      display: none;
+    }
+    .step.active { display: block; }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid #eee;
+    }
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      background: #4361ee;
+      color: #fff;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .step-header h2 { font-size: 1.15rem; font-weight: 600; }
+    .step-content { padding: 24px; }
+
+    /* Upload Area */
+    .upload-area {
+      border: 2.5px dashed #ccc;
+      border-radius: 14px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #4361ee;
+      background: #f8f9ff;
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .upload-area p { color: #888; font-size: 0.9rem; line-height: 1.5; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 20px 0;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      resize: vertical;
+      font-family: inherit;
+    }
+    textarea:focus { outline: none; border-color: #4361ee; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.primary { background: #4361ee; color: #fff; }
+    .btn.primary:hover:not(:disabled) { background: #3651d4; }
+    .btn.secondary { background: #e9ecef; color: #495057; }
+    .btn.secondary:hover:not(:disabled) { background: #dee2e6; }
+
+    /* Section List */
+    .section-item {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .section-item:hover { border-color: #4361ee; background: #fafbff; }
+    .section-item.selected { border-color: #4361ee; background: #f0f3ff; }
+    .section-item input[type="checkbox"] {
+      margin-top: 3px;
+      flex-shrink: 0;
+      width: 18px; height: 18px;
+      accent-color: #4361ee;
+    }
+    .section-info { flex: 1; min-width: 0; }
+    .section-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+    .section-preview {
+      color: #777;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Diagram Type Selector */
+    .diagram-type-selector { margin-top: 24px; }
+    .diagram-type-selector h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; }
+    .type-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .type-option input { display: none; }
+    .type-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 14px 10px;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .type-option input:checked + .type-card { border-color: #4361ee; background: #f0f3ff; }
+    .type-card:hover { border-color: #4361ee; }
+    .type-icon { font-size: 1.5rem; }
+    .type-name { font-weight: 600; font-size: 0.85rem; }
+    .type-desc { font-size: 0.75rem; color: #888; }
+
+    /* Diagram Output */
+    .diagram-card {
+      border: 1px solid #eee;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .diagram-card-header {
+      padding: 14px 18px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .diagram-card-header h3 { font-size: 1rem; font-weight: 600; }
+    .diagram-card-body {
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+    .diagram-summary {
+      padding: 12px 18px;
+      background: #f0f3ff;
+      border-top: 1px solid #e8ecff;
+      font-size: 0.88rem;
+      color: #444;
+      line-height: 1.6;
+    }
+    .diagram-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-sm:hover { background: #f0f3ff; border-color: #4361ee; }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    /* Loading */
+    .loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .loading.hidden { display: none; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e9ecef;
+      border-top-color: #4361ee;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingText { font-size: 0.95rem; color: #555; }
+
+    .error-msg {
+      background: #fff0f0;
+      color: #c33;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 12px 8px 40px; }
+      header h1 { font-size: 1.4rem; }
+      .type-options { grid-template-columns: repeat(2, 1fr); }
+      .api-key-bar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>記事広告 作図生成ツール</h1>
+      <p class="subtitle">記事原稿から理解促進用の図を自動生成します</p>
+    </header>
+
+    <!-- API Key -->
+    <div class="api-key-bar">
+      <label>Anthropic API Key:</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+      <button class="btn-save-key" id="saveKeyBtn">保存</button>
+      <span class="status" id="keyStatus"></span>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <section id="step1" class="step active">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <h2>記事原稿をアップロード</h2>
+      </div>
+      <div class="step-content">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📄</div>
+          <p>テキストファイルをドラッグ&ドロップ<br>またはクリックして選択</p>
+          <input type="file" id="fileInput" accept=".txt,.md,.text" hidden>
+        </div>
+        <div class="divider"><span>または</span></div>
+        <textarea id="articleText" placeholder="記事原稿をここに貼り付けてください..."></textarea>
+        <button id="splitBtn" class="btn primary" disabled>文脈を分析する</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Section Selection -->
+    <section id="step2" class="step">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <h2>作図する文脈を選択</h2>
+      </div>
+      <div class="step-content">
+        <div id="sectionsList"></div>
+        <div class="diagram-type-selector">
+          <h3>図の種類を選択</h3>
+          <div class="type-options">
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="flowchart" checked>
+              <span class="type-card">
+                <span class="type-icon">🔀</span>
+                <span class="type-name">フローチャート</span>
+                <span class="type-desc">手順・プロセスの流れ</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="mindmap">
+              <span class="type-card">
+                <span class="type-icon">🧠</span>
+                <span class="type-name">マインドマップ</span>
+                <span class="type-desc">概念の関連性</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="sequence">
+              <span class="type-card">
+                <span class="type-icon">↕️</span>
+                <span class="type-name">シーケンス図</span>
+                <span class="type-desc">やり取りの流れ</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="timeline">
+              <span class="type-card">
+                <span class="type-icon">📅</span>
+                <span class="type-name">タイムライン</span>
+                <span class="type-desc">時系列の整理</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="comparison">
+              <span class="type-card">
+                <span class="type-icon">⚖️</span>
+                <span class="type-name">比較・構造図</span>
+                <span class="type-desc">項目の比較整理</span>
+              </span>
+            </label>
+          </div>
+        </div>
+        <button id="generateBtn" class="btn primary" disabled>選択した文脈の図を生成</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Generated Diagrams -->
+    <section id="step3" class="step">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <h2>生成された図</h2>
+      </div>
+      <div class="step-content">
+        <div id="diagramsOutput"></div>
+        <div class="actions">
+          <button id="backBtn" class="btn secondary">文脈選択に戻る</button>
+          <button id="downloadAllBtn" class="btn primary">すべてダウンロード</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p id="loadingText">分析中...</p>
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "default",
+    securityLevel: "loose",
+    fontFamily: '"Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif',
+  });
+
+  // --- DOM ---
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const saveKeyBtn = document.getElementById("saveKeyBtn");
+  const keyStatus = document.getElementById("keyStatus");
+  const uploadArea = document.getElementById("uploadArea");
+  const fileInput = document.getElementById("fileInput");
+  const articleText = document.getElementById("articleText");
+  const splitBtn = document.getElementById("splitBtn");
+  const sectionsList = document.getElementById("sectionsList");
+  const generateBtn = document.getElementById("generateBtn");
+  const diagramsOutput = document.getElementById("diagramsOutput");
+  const backBtn = document.getElementById("backBtn");
+  const downloadAllBtn = document.getElementById("downloadAllBtn");
+  const loadingEl = document.getElementById("loading");
+  const loadingText = document.getElementById("loadingText");
+
+  const steps = {
+    step1: document.getElementById("step1"),
+    step2: document.getElementById("step2"),
+    step3: document.getElementById("step3"),
+  };
+
+  let sections = [];
+  let generatedDiagrams = [];
+
+  // --- API Key Management ---
+  function getApiKey() {
+    return localStorage.getItem("anthropic_api_key") || "";
+  }
+
+  function updateKeyStatus() {
+    const key = getApiKey();
+    if (key) {
+      keyStatus.textContent = "設定済み";
+      keyStatus.className = "status saved";
+      apiKeyInput.value = key;
+    } else {
+      keyStatus.textContent = "未設定";
+      keyStatus.className = "status empty";
+    }
+  }
+
+  saveKeyBtn.addEventListener("click", () => {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+      localStorage.setItem("anthropic_api_key", key);
+      updateKeyStatus();
+    } else {
+      localStorage.removeItem("anthropic_api_key");
+      updateKeyStatus();
+    }
+  });
+
+  updateKeyStatus();
+
+  // --- Claude API Call ---
+  async function callClaude(prompt, maxTokens = 4096) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      throw new Error("APIキーが設定されていません。上部のフィールドにAnthropic APIキーを入力してください。");
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: maxTokens,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        throw new Error("APIキーが無効です。正しいキーを設定してください。");
+      }
+      throw new Error(err.error?.message || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.content[0].text;
+  }
+
+  // --- Step 1: File Upload ---
+  uploadArea.addEventListener("click", () => fileInput.click());
+  uploadArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    uploadArea.classList.add("dragover");
+  });
+  uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+  uploadArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) readFile(fileInput.files[0]);
+  });
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      articleText.value = e.target.result;
+      updateSplitBtn();
+    };
+    reader.readAsText(file);
+  }
+
+  articleText.addEventListener("input", updateSplitBtn);
+
+  function updateSplitBtn() {
+    splitBtn.disabled = !articleText.value.trim();
+  }
+
+  // --- Split Article ---
+  splitBtn.addEventListener("click", async () => {
+    const text = articleText.value.trim();
+    if (!text) return;
+
+    showLoading("記事を文脈ごとに分析中...");
+    try {
+      const prompt = `以下の記事広告の原稿を、意味的なまとまり（文脈）ごとに分割してください。
+
+ルール:
+- 各セクションには「title」（そのセクションの要約タイトル、15文字以内）と「content」（原文のテキスト）を含めてください
+- 記事の論理的な流れや話題の切り替わりを基準に分割してください
+- 見出しがある場合はそれを区切りの手がかりにしてください
+- 各セクションが独立して理解できる程度のまとまりにしてください
+- JSON配列で返してください。JSONのみを返し、他のテキストは含めないでください
+
+出力形式:
+[
+  {"title": "セクションタイトル", "content": "セクションの本文..."},
+  ...
+]
+
+記事原稿:
+${text}`;
+
+      const result = await callClaude(prompt);
+      const jsonMatch = result.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error("セクション分割の解析に失敗しました");
+
+      sections = JSON.parse(jsonMatch[0]);
+      renderSections();
+      showStep("step2");
+    } catch (err) {
+      showError(steps.step1.querySelector(".step-content"), err.message);
+    } finally {
+      hideLoading();
+    }
+  });
+
+  // --- Step 2: Section Selection ---
+  function renderSections() {
+    sectionsList.innerHTML = "";
+    sections.forEach((sec, i) => {
+      const item = document.createElement("div");
+      item.className = "section-item";
+      item.innerHTML = `
+        <input type="checkbox" id="sec-${i}" data-index="${i}">
+        <div class="section-info">
+          <div class="section-title">${escapeHtml(sec.title)}</div>
+          <div class="section-preview">${escapeHtml(sec.content)}</div>
+        </div>
+      `;
+      item.addEventListener("click", (e) => {
+        if (e.target.tagName !== "INPUT") {
+          const cb = item.querySelector("input");
+          cb.checked = !cb.checked;
+        }
+        item.classList.toggle("selected", item.querySelector("input").checked);
+        updateGenerateBtn();
+      });
+      sectionsList.appendChild(item);
+    });
+    updateGenerateBtn();
+  }
+
+  function updateGenerateBtn() {
+    const checked = sectionsList.querySelectorAll("input:checked");
+    generateBtn.disabled = checked.length === 0;
+  }
+
+  // --- Generate Diagrams ---
+  generateBtn.addEventListener("click", async () => {
+    const checkedInputs = sectionsList.querySelectorAll("input:checked");
+    const selectedIndices = Array.from(checkedInputs).map((cb) => parseInt(cb.dataset.index));
+    const diagramType = document.querySelector('input[name="diagramType"]:checked').value;
+
+    if (selectedIndices.length === 0) return;
+
+    showLoading("図を生成中...");
+    generatedDiagrams = [];
+    diagramsOutput.innerHTML = "";
+
+    const typePrompts = {
+      flowchart: "フローチャート（flowchart TD）",
+      mindmap: "マインドマップ（mindmap）",
+      sequence: "シーケンス図（sequenceDiagram）",
+      timeline: "タイムライン（timeline）",
+      comparison: "比較表や構造図（flowchart LR でボックスを並べる形式）",
+    };
+    const diagramDesc = typePrompts[diagramType] || typePrompts.flowchart;
+
+    try {
+      for (let idx = 0; idx < selectedIndices.length; idx++) {
+        const sIdx = selectedIndices[idx];
+        const section = sections[sIdx];
+        loadingText.textContent = `図を生成中... (${idx + 1}/${selectedIndices.length}) ${section.title}`;
+
+        const diagramPrompt = `以下の記事セクションの内容を読者が視覚的に理解できるよう、Mermaid.js の${diagramDesc}として作図してください。
+
+ルール:
+- 記事の内容を正確に反映すること
+- 読者の理解を促進する構成にすること
+- ノードのテキストは簡潔に（各ノード20文字以内）
+- 日本語で記述すること
+- Mermaid.jsの正しい構文で出力すること
+- コードブロック（\`\`\`mermaid ... \`\`\`）の中身だけを返してください
+- ノードIDには日本語やスペースを使わず、英数字のみを使ってください
+- ノードのラベルは["テキスト"] の形式で日本語を囲んでください
+- subgraphのタイトルも日本語OKです
+
+セクションタイトル: ${section.title}
+セクション内容:
+${section.content}`;
+
+        const mermaidRaw = await callClaude(diagramPrompt);
+        const mermaidCode = mermaidRaw
+          .replace(/```mermaid\s*/g, "")
+          .replace(/```\s*/g, "")
+          .trim();
+
+        const summaryPrompt = `以下の記事セクションの内容を、図の説明文として1〜2文で要約してください。
+
+セクションタイトル: ${section.title}
+セクション内容:
+${section.content}`;
+
+        const summary = await callClaude(summaryPrompt, 512);
+
+        generatedDiagrams.push({
+          title: section.title,
+          mermaidCode,
+          summary: summary.trim(),
+        });
+      }
+
+      await renderDiagrams();
+      showStep("step3");
+    } catch (err) {
+      showError(steps.step2.querySelector(".step-content"), err.message);
+    } finally {
+      hideLoading();
+    }
+  });
+
+  async function renderDiagrams() {
+    diagramsOutput.innerHTML = "";
+
+    for (let i = 0; i < generatedDiagrams.length; i++) {
+      const d = generatedDiagrams[i];
+      const card = document.createElement("div");
+      card.className = "diagram-card";
+      const diagramId = `mermaid-${i}-${Date.now()}`;
+
+      card.innerHTML = `
+        <div class="diagram-card-header">
+          <h3>${escapeHtml(d.title)}</h3>
+          <div class="diagram-actions">
+            <button class="btn-sm" data-action="copy-svg" data-id="${diagramId}">SVGコピー</button>
+            <button class="btn-sm" data-action="dl-svg" data-id="${diagramId}" data-title="${escapeHtml(d.title)}">SVGダウンロード</button>
+            <button class="btn-sm" data-action="dl-png" data-id="${diagramId}" data-title="${escapeHtml(d.title)}">PNGダウンロード</button>
+          </div>
+        </div>
+        <div class="diagram-card-body">
+          <div class="mermaid-container" id="${diagramId}"></div>
+        </div>
+        <div class="diagram-summary">${escapeHtml(d.summary)}</div>
+      `;
+      diagramsOutput.appendChild(card);
+
+      // Render mermaid
+      try {
+        const { svg } = await mermaid.render(diagramId + "-svg", d.mermaidCode);
+        card.querySelector(".mermaid-container").innerHTML = svg;
+      } catch (err) {
+        card.querySelector(".mermaid-container").innerHTML = `
+          <div class="error-msg">
+            図のレンダリングに失敗しました。Mermaidコード:<br>
+            <pre style="margin-top:8px;font-size:0.8rem;white-space:pre-wrap">${escapeHtml(d.mermaidCode)}</pre>
+          </div>
+        `;
+      }
+    }
+  }
+
+  // --- Diagram Actions (Event Delegation) ---
+  diagramsOutput.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    const title = btn.dataset.title || "diagram";
+    const container = document.getElementById(id);
+    const svg = container?.querySelector("svg");
+    if (!svg) return;
+
+    if (action === "copy-svg") {
+      const svgData = new XMLSerializer().serializeToString(svg);
+      navigator.clipboard.writeText(svgData).then(() => alert("SVGをクリップボードにコピーしました"));
+    } else if (action === "dl-svg") {
+      downloadSvgElement(svg, title);
+    } else if (action === "dl-png") {
+      downloadPngFromSvg(svg, title);
+    }
+  });
+
+  function downloadSvgElement(svg, title) {
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadPngFromSvg(svg, title) {
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width * 2;
+      canvas.height = img.height * 2;
+      ctx.scale(2, 2);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `${title}.png`;
+      a.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  }
+
+  // --- Navigation ---
+  backBtn.addEventListener("click", () => showStep("step2"));
+
+  downloadAllBtn.addEventListener("click", () => {
+    document.querySelectorAll(".diagram-card-body svg").forEach((svg, i) => {
+      const title = generatedDiagrams[i]?.title || `diagram-${i}`;
+      downloadSvgElement(svg, title);
+    });
+  });
+
+  // --- Helpers ---
+  function showStep(stepId) {
+    Object.values(steps).forEach((s) => s.classList.remove("active"));
+    steps[stepId].classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showLoading(msg) {
+    loadingText.textContent = msg;
+    loadingEl.classList.remove("hidden");
+  }
+
+  function hideLoading() {
+    loadingEl.classList.add("hidden");
+  }
+
+  function showError(container, msg) {
+    const existing = container.querySelector(".error-msg");
+    if (existing) existing.remove();
+    const el = document.createElement("div");
+    el.className = "error-msg";
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 8000);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+});
+</script>
+</body>
+</html>
