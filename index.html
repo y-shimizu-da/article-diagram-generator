@@ -16,7 +16,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 24px 16px 60px;
     }
@@ -37,130 +37,68 @@
       gap: 12px;
       flex-wrap: wrap;
     }
-    .api-key-bar label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #555;
-      white-space: nowrap;
-    }
+    .api-key-bar label { font-size: 0.85rem; font-weight: 600; color: #555; white-space: nowrap; }
     .api-key-bar input {
-      flex: 1;
-      min-width: 200px;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-family: monospace;
+      flex: 1; min-width: 200px; padding: 8px 12px;
+      border: 1px solid #ddd; border-radius: 6px;
+      font-size: 0.85rem; font-family: monospace;
     }
     .api-key-bar input:focus { outline: none; border-color: #4361ee; }
-    .api-key-bar .status {
-      font-size: 0.8rem;
-      padding: 4px 10px;
-      border-radius: 12px;
-      white-space: nowrap;
-    }
+    .api-key-bar .status { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
     .api-key-bar .status.saved { background: #e8f5e9; color: #2e7d32; }
     .api-key-bar .status.empty { background: #fff3e0; color: #e65100; }
     .api-key-bar .btn-save-key {
-      padding: 8px 16px;
-      background: #4361ee;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
+      padding: 8px 16px; background: #4361ee; color: #fff; border: none;
+      border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
     }
     .api-key-bar .btn-save-key:hover { background: #3651d4; }
 
     /* Steps */
     .step {
-      background: #fff;
-      border-radius: 12px;
+      background: #fff; border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      margin-bottom: 20px;
-      overflow: hidden;
-      display: none;
+      margin-bottom: 20px; overflow: hidden; display: none;
     }
     .step.active { display: block; }
     .step-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 18px 24px;
-      border-bottom: 1px solid #eee;
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 24px; border-bottom: 1px solid #eee;
     }
     .step-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px; height: 32px;
-      background: #4361ee;
-      color: #fff;
-      border-radius: 50%;
-      font-weight: 700;
-      font-size: 0.9rem;
-      flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; background: #4361ee; color: #fff;
+      border-radius: 50%; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
     }
     .step-header h2 { font-size: 1.15rem; font-weight: 600; }
     .step-content { padding: 24px; }
 
     /* Upload Area */
     .upload-area {
-      border: 2.5px dashed #ccc;
-      border-radius: 14px;
-      padding: 40px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: #fafafa;
+      border: 2.5px dashed #ccc; border-radius: 14px;
+      padding: 40px 20px; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: #fafafa;
     }
-    .upload-area:hover, .upload-area.dragover {
-      border-color: #4361ee;
-      background: #f8f9ff;
-    }
+    .upload-area:hover, .upload-area.dragover { border-color: #4361ee; background: #f8f9ff; }
     .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
     .upload-area p { color: #888; font-size: 0.9rem; line-height: 1.5; }
 
     .divider {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin: 20px 0;
-      color: #aaa;
-      font-size: 0.85rem;
+      display: flex; align-items: center; gap: 16px;
+      margin: 20px 0; color: #aaa; font-size: 0.85rem;
     }
-    .divider::before, .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: #ddd;
-    }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #ddd; }
 
     textarea {
-      width: 100%;
-      min-height: 200px;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      line-height: 1.7;
-      resize: vertical;
-      font-family: inherit;
+      width: 100%; min-height: 200px; padding: 14px;
+      border: 1px solid #ddd; border-radius: 8px;
+      font-size: 0.95rem; line-height: 1.7; resize: vertical; font-family: inherit;
     }
     textarea:focus { outline: none; border-color: #4361ee; }
 
     /* Buttons */
     .btn {
-      display: inline-block;
-      padding: 12px 28px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 16px;
+      display: inline-block; padding: 12px 28px; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 16px;
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn.primary { background: #4361ee; color: #fff; }
@@ -168,151 +106,103 @@
     .btn.secondary { background: #e9ecef; color: #495057; }
     .btn.secondary:hover:not(:disabled) { background: #dee2e6; }
 
-    /* Section List */
-    .section-item {
-      display: flex;
-      gap: 12px;
-      padding: 16px;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: all 0.2s;
+    /* Section Cards */
+    .section-card {
+      border: 1px solid #eee; border-radius: 10px;
+      margin-bottom: 16px; overflow: hidden; transition: all 0.2s;
     }
-    .section-item:hover { border-color: #4361ee; background: #fafbff; }
-    .section-item.selected { border-color: #4361ee; background: #f0f3ff; }
-    .section-item input[type="checkbox"] {
-      margin-top: 3px;
-      flex-shrink: 0;
-      width: 18px; height: 18px;
-      accent-color: #4361ee;
+    .section-card.selected { border-color: #4361ee; box-shadow: 0 0 0 1px #4361ee; }
+    .section-card-header {
+      display: flex; gap: 12px; padding: 16px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .section-card-header:hover { background: #fafbff; }
+    .section-card-header input[type="checkbox"] {
+      margin-top: 3px; flex-shrink: 0; width: 18px; height: 18px; accent-color: #4361ee;
     }
     .section-info { flex: 1; min-width: 0; }
     .section-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
     .section-preview {
-      color: #777;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      color: #777; font-size: 0.85rem; line-height: 1.5;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
     }
 
-    /* Diagram Type Selector */
-    .diagram-type-selector { margin-top: 24px; }
-    .diagram-type-selector h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; }
-    .type-options {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
+    /* Per-section diagram type picker */
+    .section-type-picker {
+      display: none; padding: 0 16px 16px;
+      border-top: 1px solid #f0f0f0;
     }
-    .type-option input { display: none; }
-    .type-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 14px 10px;
-      border: 2px solid #eee;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
+    .section-card.selected .section-type-picker { display: block; }
+    .section-type-picker h4 {
+      font-size: 0.8rem; font-weight: 600; color: #888;
+      margin: 12px 0 8px; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .type-option input:checked + .type-card { border-color: #4361ee; background: #f0f3ff; }
-    .type-card:hover { border-color: #4361ee; }
-    .type-icon { font-size: 1.5rem; }
-    .type-name { font-weight: 600; font-size: 0.85rem; }
-    .type-desc { font-size: 0.75rem; color: #888; }
+    .type-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px;
+    }
+    .type-grid label { display: block; }
+    .type-grid input { display: none; }
+    .type-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 10px; border: 1.5px solid #eee; border-radius: 8px;
+      cursor: pointer; transition: all 0.15s; font-size: 0.78rem;
+    }
+    .type-chip:hover { border-color: #b0c4ff; background: #f8f9ff; }
+    .type-grid input:checked + .type-chip { border-color: #4361ee; background: #eef1ff; font-weight: 600; }
+    .type-chip-icon { font-size: 1rem; flex-shrink: 0; }
+    .type-chip-label { line-height: 1.3; }
+    .type-chip-name { display: block; font-size: 0.8rem; }
+    .type-chip-desc { display: block; font-size: 0.65rem; color: #999; font-weight: 400; }
+    .type-category { margin-bottom: 10px; }
 
     /* Diagram Output */
     .diagram-card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      overflow: hidden;
+      border: 1px solid #eee; border-radius: 10px;
+      margin-bottom: 20px; overflow: hidden;
     }
     .diagram-card-header {
-      padding: 14px 18px;
-      background: #f8f9fa;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      padding: 14px 18px; background: #f8f9fa; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 8px;
     }
     .diagram-card-header h3 { font-size: 1rem; font-weight: 600; }
-    .diagram-card-body {
-      padding: 24px;
-      display: flex;
-      justify-content: center;
-      overflow-x: auto;
-    }
+    .diagram-card-body { padding: 24px; display: flex; justify-content: center; overflow-x: auto; }
     .diagram-summary {
-      padding: 12px 18px;
-      background: #f0f3ff;
-      border-top: 1px solid #e8ecff;
-      font-size: 0.88rem;
-      color: #444;
-      line-height: 1.6;
+      padding: 12px 18px; background: #f0f3ff; border-top: 1px solid #e8ecff;
+      font-size: 0.88rem; color: #444; line-height: 1.6;
     }
     .diagram-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn-sm {
-      padding: 6px 14px;
-      font-size: 0.8rem;
-      border: 1px solid #ddd;
-      background: #fff;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 6px 14px; font-size: 0.8rem; border: 1px solid #ddd;
+      background: #fff; border-radius: 6px; cursor: pointer; transition: all 0.2s;
     }
     .btn-sm:hover { background: #f0f3ff; border-color: #4361ee; }
-    .actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 12px;
-    }
+    .actions { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
 
     /* Loading */
     .loading {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.85);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      backdrop-filter: blur(4px);
+      position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(4px);
     }
     .loading.hidden { display: none; }
     .spinner {
-      width: 44px; height: 44px;
-      border: 4px solid #e9ecef;
-      border-top-color: #4361ee;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 16px;
+      width: 44px; height: 44px; border: 4px solid #e9ecef; border-top-color: #4361ee;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loadingText { font-size: 0.95rem; color: #555; }
 
     .error-msg {
-      background: #fff0f0;
-      color: #c33;
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-top: 12px;
-      font-size: 0.9rem;
+      background: #fff0f0; color: #c33; padding: 12px 16px;
+      border-radius: 8px; margin-top: 12px; font-size: 0.9rem;
     }
 
     @media (max-width: 600px) {
       .container { padding: 12px 8px 40px; }
       header h1 { font-size: 1.4rem; }
-      .type-options { grid-template-columns: repeat(2, 1fr); }
+      .type-grid { grid-template-columns: repeat(2, 1fr); }
       .api-key-bar { flex-direction: column; align-items: stretch; }
     }
   </style>
@@ -350,59 +240,15 @@
       </div>
     </section>
 
-    <!-- Step 2: Section Selection -->
+    <!-- Step 2: Section Selection + Per-section diagram type -->
     <section id="step2" class="step">
       <div class="step-header">
         <span class="step-number">2</span>
-        <h2>作図する文脈を選択</h2>
+        <h2>文脈を選択し、作図タイプを指定</h2>
       </div>
       <div class="step-content">
+        <p style="font-size:0.85rem;color:#888;margin-bottom:16px;">チェックを入れると作図タイプを選べます。セクションごとに異なる図を指定できます。</p>
         <div id="sectionsList"></div>
-        <div class="diagram-type-selector">
-          <h3>図の種類を選択</h3>
-          <div class="type-options">
-            <label class="type-option">
-              <input type="radio" name="diagramType" value="flowchart" checked>
-              <span class="type-card">
-                <span class="type-icon">🔀</span>
-                <span class="type-name">フローチャート</span>
-                <span class="type-desc">手順・プロセスの流れ</span>
-              </span>
-            </label>
-            <label class="type-option">
-              <input type="radio" name="diagramType" value="mindmap">
-              <span class="type-card">
-                <span class="type-icon">🧠</span>
-                <span class="type-name">マインドマップ</span>
-                <span class="type-desc">概念の関連性</span>
-              </span>
-            </label>
-            <label class="type-option">
-              <input type="radio" name="diagramType" value="sequence">
-              <span class="type-card">
-                <span class="type-icon">↕️</span>
-                <span class="type-name">シーケンス図</span>
-                <span class="type-desc">やり取りの流れ</span>
-              </span>
-            </label>
-            <label class="type-option">
-              <input type="radio" name="diagramType" value="timeline">
-              <span class="type-card">
-                <span class="type-icon">📅</span>
-                <span class="type-name">タイムライン</span>
-                <span class="type-desc">時系列の整理</span>
-              </span>
-            </label>
-            <label class="type-option">
-              <input type="radio" name="diagramType" value="comparison">
-              <span class="type-card">
-                <span class="type-icon">⚖️</span>
-                <span class="type-name">比較・構造図</span>
-                <span class="type-desc">項目の比較整理</span>
-              </span>
-            </label>
-          </div>
-        </div>
         <button id="generateBtn" class="btn primary" disabled>選択した文脈の図を生成</button>
       </div>
     </section>
@@ -438,6 +284,29 @@ document.addEventListener("DOMContentLoaded", () => {
     fontFamily: '"Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif',
   });
 
+  // ============================================================
+  // Diagram type definitions — grouped for article LP
+  // ============================================================
+  const DIAGRAM_TYPES = {
+    // --- 基本 ---
+    flowchart:    { icon: "🔀", name: "フローチャート",     desc: "手順・プロセスの流れ",       category: "基本",   mermaid: "フローチャート（flowchart TD）" },
+    mindmap:      { icon: "🧠", name: "マインドマップ",     desc: "概念の関連・全体像",         category: "基本",   mermaid: "マインドマップ（mindmap）" },
+    timeline:     { icon: "📅", name: "タイムライン",       desc: "時系列の変化",               category: "基本",   mermaid: "タイムライン（timeline）" },
+    // --- 通販LP向け ---
+    beforeafter:  { icon: "🔄", name: "ビフォーアフター",   desc: "使用前後の変化",             category: "通販LP向け", mermaid: "ビフォーアフター比較図（flowchart LR で左に『Before』右に『After』のsubgraphを配置し、矢印で変化を示す）" },
+    problem:      { icon: "💡", name: "悩み→解決",          desc: "課題から解決策への流れ",     category: "通販LP向け", mermaid: "悩み→解決フロー（flowchart TD で上部に悩み・課題を赤系ノード、下部に解決策・効果を緑系ノードで配置。スタイルでfill色を指定）" },
+    uservoice:    { icon: "💬", name: "ユーザーの声",       desc: "口コミ・体験談の整理",       category: "通販LP向け", mermaid: "ユーザーの声・体験談まとめ（flowchart TD で中央に商品ノード、周囲に吹き出し風ノードで各ユーザーの声を配置）" },
+    comparison:   { icon: "⚖️", name: "商品比較表",         desc: "他社比較・スペック比較",     category: "通販LP向け", mermaid: "比較表（flowchart LR でsubgraphを並べて各項目の比較をノードで表現）" },
+    ingredients:  { icon: "🧪", name: "成分・特徴",         desc: "成分や機能の分解",           category: "通販LP向け", mermaid: "成分・特徴の構造図（mindmap で中央に商品名、枝に各成分・特徴とその効果を配置）" },
+    steps:        { icon: "👣", name: "使い方ステップ",     desc: "使用方法の手順",             category: "通販LP向け", mermaid: "使い方ステップ図（flowchart TD でSTEP1→STEP2→STEP3...の縦フロー、各ステップにアイコン的ラベル付き）" },
+    ranking:      { icon: "🏆", name: "ランキング",         desc: "順位・人気度の可視化",       category: "通販LP向け", mermaid: "ランキング図（flowchart TD で1位→2位→3位の縦並び、各ノードに順位と項目名。1位ノードは太枠で強調）" },
+    // --- 信頼・説得 ---
+    evidence:     { icon: "📊", name: "実績・数字",         desc: "データや数値の図解",         category: "信頼・説得", mermaid: "実績・数字の図解（flowchart LR で各実績数値を大きなラベルのノードで横並びに配置）" },
+    mechanism:    { icon: "⚙️", name: "メカニズム",         desc: "なぜ効くのか・仕組み",       category: "信頼・説得", mermaid: "メカニズム説明図（flowchart TD で原因→作用→結果の因果関係を矢印で示す）" },
+    guarantee:    { icon: "🛡️", name: "安心・保証",         desc: "保証内容・安心ポイント",     category: "信頼・説得", mermaid: "安心ポイントまとめ（flowchart TD で中央に『安心のポイント』ノード、放射状に各保証・安心要素を接続）" },
+    faq:          { icon: "❓", name: "FAQ",                desc: "よくある質問と回答",         category: "信頼・説得", mermaid: "FAQ図（flowchart TD でQ→Aのペアを縦に並べて配置。Qノードは青系、Aノードは緑系で色分け）" },
+  };
+
   // --- DOM ---
   const apiKeyInput = document.getElementById("apiKeyInput");
   const saveKeyBtn = document.getElementById("saveKeyBtn");
@@ -464,9 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let generatedDiagrams = [];
 
   // --- API Key Management ---
-  function getApiKey() {
-    return localStorage.getItem("gemini_api_key") || "";
-  }
+  function getApiKey() { return localStorage.getItem("gemini_api_key") || ""; }
 
   function updateKeyStatus() {
     const key = getApiKey();
@@ -482,15 +349,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   saveKeyBtn.addEventListener("click", () => {
     const key = apiKeyInput.value.trim();
-    if (key) {
-      localStorage.setItem("gemini_api_key", key);
-      updateKeyStatus();
-    } else {
-      localStorage.removeItem("gemini_api_key");
-      updateKeyStatus();
-    }
+    if (key) { localStorage.setItem("gemini_api_key", key); } else { localStorage.removeItem("gemini_api_key"); }
+    updateKeyStatus();
   });
-
   updateKeyStatus();
 
   // --- Gemini API Call ---
@@ -528,7 +389,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!candidate?.content?.parts) {
       throw new Error("APIからの応答が空です。もう一度お試しください。");
     }
-    // Gemini 2.5 has thinking mode — filter out thought parts, keep only text output
     const textParts = candidate.content.parts.filter(p => !p.thought && p.text);
     if (textParts.length === 0) {
       throw new Error("APIからのテキスト応答がありません。もう一度お試しください。");
@@ -538,35 +398,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Step 1: File Upload ---
   uploadArea.addEventListener("click", () => fileInput.click());
-  uploadArea.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    uploadArea.classList.add("dragover");
-  });
+  uploadArea.addEventListener("dragover", (e) => { e.preventDefault(); uploadArea.classList.add("dragover"); });
   uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
   uploadArea.addEventListener("drop", (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove("dragover");
-    const file = e.dataTransfer.files[0];
-    if (file) readFile(file);
+    e.preventDefault(); uploadArea.classList.remove("dragover");
+    if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files[0]) readFile(fileInput.files[0]);
-  });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) readFile(fileInput.files[0]); });
 
   function readFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      articleText.value = e.target.result;
-      updateSplitBtn();
-    };
+    reader.onload = (e) => { articleText.value = e.target.result; updateSplitBtn(); };
     reader.readAsText(file);
   }
 
   articleText.addEventListener("input", updateSplitBtn);
-
-  function updateSplitBtn() {
-    splitBtn.disabled = !articleText.value.trim();
-  }
+  function updateSplitBtn() { splitBtn.disabled = !articleText.value.trim(); }
 
   // --- Split Article ---
   splitBtn.addEventListener("click", async () => {
@@ -594,7 +441,6 @@ document.addEventListener("DOMContentLoaded", () => {
 ${text}`;
 
       const result = await callGemini(prompt);
-      // Remove markdown code fences if present
       const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
       const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error("セクション分割の解析に失敗しました。APIレスポンス: " + result.substring(0, 200));
@@ -610,69 +456,105 @@ ${text}`;
     }
   });
 
-  // --- Step 2: Section Selection ---
+  // --- Step 2: Render sections with per-section type picker ---
+  function buildTypePickerHTML(sectionIndex) {
+    const categories = {};
+    for (const [key, t] of Object.entries(DIAGRAM_TYPES)) {
+      if (!categories[t.category]) categories[t.category] = [];
+      categories[t.category].push({ key, ...t });
+    }
+
+    let html = "";
+    for (const [cat, types] of Object.entries(categories)) {
+      html += `<div class="type-category"><h4>${escapeHtml(cat)}</h4><div class="type-grid">`;
+      types.forEach((t, idx) => {
+        const checked = (cat === "基本" && idx === 0) ? "checked" : "";
+        html += `
+          <label>
+            <input type="radio" name="dtype-${sectionIndex}" value="${t.key}" ${checked}>
+            <span class="type-chip">
+              <span class="type-chip-icon">${t.icon}</span>
+              <span class="type-chip-label">
+                <span class="type-chip-name">${escapeHtml(t.name)}</span>
+                <span class="type-chip-desc">${escapeHtml(t.desc)}</span>
+              </span>
+            </span>
+          </label>`;
+      });
+      html += `</div></div>`;
+    }
+    return html;
+  }
+
   function renderSections() {
     sectionsList.innerHTML = "";
     sections.forEach((sec, i) => {
-      const item = document.createElement("div");
-      item.className = "section-item";
-      item.innerHTML = `
-        <input type="checkbox" id="sec-${i}" data-index="${i}">
-        <div class="section-info">
-          <div class="section-title">${escapeHtml(sec.title)}</div>
-          <div class="section-preview">${escapeHtml(sec.content)}</div>
+      const card = document.createElement("div");
+      card.className = "section-card";
+      card.innerHTML = `
+        <div class="section-card-header">
+          <input type="checkbox" data-index="${i}">
+          <div class="section-info">
+            <div class="section-title">${escapeHtml(sec.title)}</div>
+            <div class="section-preview">${escapeHtml(sec.content)}</div>
+          </div>
+        </div>
+        <div class="section-type-picker">
+          ${buildTypePickerHTML(i)}
         </div>
       `;
-      item.addEventListener("click", (e) => {
+
+      const header = card.querySelector(".section-card-header");
+      header.addEventListener("click", (e) => {
         if (e.target.tagName !== "INPUT") {
-          const cb = item.querySelector("input");
+          const cb = card.querySelector("input[type=checkbox]");
           cb.checked = !cb.checked;
         }
-        item.classList.toggle("selected", item.querySelector("input").checked);
+        card.classList.toggle("selected", card.querySelector("input[type=checkbox]").checked);
         updateGenerateBtn();
       });
-      sectionsList.appendChild(item);
+
+      sectionsList.appendChild(card);
     });
     updateGenerateBtn();
   }
 
   function updateGenerateBtn() {
-    const checked = sectionsList.querySelectorAll("input:checked");
-    generateBtn.disabled = checked.length === 0;
+    generateBtn.disabled = sectionsList.querySelectorAll("input[type=checkbox]:checked").length === 0;
   }
 
   // --- Generate Diagrams ---
   generateBtn.addEventListener("click", async () => {
-    const checkedInputs = sectionsList.querySelectorAll("input:checked");
-    const selectedIndices = Array.from(checkedInputs).map((cb) => parseInt(cb.dataset.index));
-    const diagramType = document.querySelector('input[name="diagramType"]:checked').value;
+    const cards = sectionsList.querySelectorAll(".section-card");
+    const selected = [];
+    cards.forEach((card) => {
+      const cb = card.querySelector("input[type=checkbox]");
+      if (!cb.checked) return;
+      const idx = parseInt(cb.dataset.index);
+      const typeRadio = card.querySelector("input[type=radio]:checked");
+      const diagramType = typeRadio ? typeRadio.value : "flowchart";
+      selected.push({ idx, diagramType });
+    });
 
-    if (selectedIndices.length === 0) return;
+    if (selected.length === 0) return;
 
     showLoading("図を生成中...");
     generatedDiagrams = [];
     diagramsOutput.innerHTML = "";
 
-    const typePrompts = {
-      flowchart: "フローチャート（flowchart TD）",
-      mindmap: "マインドマップ（mindmap）",
-      sequence: "シーケンス図（sequenceDiagram）",
-      timeline: "タイムライン（timeline）",
-      comparison: "比較表や構造図（flowchart LR でボックスを並べる形式）",
-    };
-    const diagramDesc = typePrompts[diagramType] || typePrompts.flowchart;
-
     try {
-      for (let idx = 0; idx < selectedIndices.length; idx++) {
-        const sIdx = selectedIndices[idx];
-        const section = sections[sIdx];
-        loadingText.textContent = `図を生成中... (${idx + 1}/${selectedIndices.length}) ${section.title}`;
+      for (let i = 0; i < selected.length; i++) {
+        const { idx, diagramType } = selected[i];
+        const section = sections[idx];
+        const typeInfo = DIAGRAM_TYPES[diagramType] || DIAGRAM_TYPES.flowchart;
+        loadingText.textContent = `図を生成中... (${i + 1}/${selected.length}) ${section.title}`;
 
-        const diagramPrompt = `以下の記事セクションの内容を読者が視覚的に理解できるよう、Mermaid.js の${diagramDesc}として作図してください。
+        const diagramPrompt = `以下の記事セクションの内容を読者が視覚的に理解できるよう、Mermaid.js の${typeInfo.mermaid}として作図してください。
 
 ルール:
 - 記事の内容を正確に反映すること
 - 読者の理解を促進する構成にすること
+- 通販の記事LP（ランディングページ）に挿入される図であることを意識し、読みやすくわかりやすい構成にすること
 - ノードのテキストは簡潔に（各ノード20文字以内）
 - 日本語で記述すること
 - Mermaid.jsの正しい構文で出力すること
@@ -680,6 +562,7 @@ ${text}`;
 - ノードIDには日本語やスペースを使わず、英数字のみを使ってください
 - ノードのラベルは["テキスト"] の形式で日本語を囲んでください
 - subgraphのタイトルも日本語OKです
+- style文でノードに色を付ける場合、fill,stroke,colorの形式で指定してください
 
 セクションタイトル: ${section.title}
 セクション内容:
@@ -701,6 +584,7 @@ ${section.content}`;
 
         generatedDiagrams.push({
           title: section.title,
+          typeName: typeInfo.name,
           mermaidCode,
           summary: summary.trim(),
         });
@@ -726,7 +610,7 @@ ${section.content}`;
 
       card.innerHTML = `
         <div class="diagram-card-header">
-          <h3>${escapeHtml(d.title)}</h3>
+          <h3>${escapeHtml(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${escapeHtml(d.typeName)}</span></h3>
           <div class="diagram-actions">
             <button class="btn-sm" data-action="copy-svg" data-id="${diagramId}">SVGコピー</button>
             <button class="btn-sm" data-action="dl-svg" data-id="${diagramId}" data-title="${escapeHtml(d.title)}">SVGダウンロード</button>
@@ -740,7 +624,6 @@ ${section.content}`;
       `;
       diagramsOutput.appendChild(card);
 
-      // Render mermaid
       try {
         const { svg } = await mermaid.render(diagramId + "-svg", d.mermaidCode);
         card.querySelector(".mermaid-container").innerHTML = svg;
@@ -755,7 +638,7 @@ ${section.content}`;
     }
   }
 
-  // --- Diagram Actions (Event Delegation) ---
+  // --- Diagram Actions ---
   diagramsOutput.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -781,9 +664,7 @@ ${section.content}`;
     const blob = new Blob([svgData], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title}.svg`;
-    a.click();
+    a.href = url; a.download = `${title}.svg`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -793,27 +674,21 @@ ${section.content}`;
     const ctx = canvas.getContext("2d");
     const img = new Image();
     img.onload = () => {
-      canvas.width = img.width * 2;
-      canvas.height = img.height * 2;
+      canvas.width = img.width * 2; canvas.height = img.height * 2;
       ctx.scale(2, 2);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
       const a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = `${title}.png`;
-      a.click();
+      a.href = canvas.toDataURL("image/png"); a.download = `${title}.png`; a.click();
     };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }
 
   // --- Navigation ---
   backBtn.addEventListener("click", () => showStep("step2"));
-
   downloadAllBtn.addEventListener("click", () => {
     document.querySelectorAll(".diagram-card-body svg").forEach((svg, i) => {
-      const title = generatedDiagrams[i]?.title || `diagram-${i}`;
-      downloadSvgElement(svg, title);
+      downloadSvgElement(svg, generatedDiagrams[i]?.title || `diagram-${i}`);
     });
   });
 
@@ -823,26 +698,16 @@ ${section.content}`;
     steps[stepId].classList.add("active");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
-
-  function showLoading(msg) {
-    loadingText.textContent = msg;
-    loadingEl.classList.remove("hidden");
-  }
-
-  function hideLoading() {
-    loadingEl.classList.add("hidden");
-  }
-
+  function showLoading(msg) { loadingText.textContent = msg; loadingEl.classList.remove("hidden"); }
+  function hideLoading() { loadingEl.classList.add("hidden"); }
   function showError(container, msg) {
     const existing = container.querySelector(".error-msg");
     if (existing) existing.remove();
     const el = document.createElement("div");
-    el.className = "error-msg";
-    el.textContent = msg;
+    el.className = "error-msg"; el.textContent = msg;
     container.appendChild(el);
     setTimeout(() => el.remove(), 8000);
   }
-
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
