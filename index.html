@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>記事広告 作図生成ツール</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -16,7 +15,6 @@
     header h1 { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
     .subtitle { color: #666; margin-top: 6px; font-size: 0.95rem; }
 
-    /* API Key Bar */
     .api-key-bar {
       background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       padding: 16px 24px; margin-bottom: 20px;
@@ -37,7 +35,6 @@
     }
     .api-key-bar .btn-save-key:hover { background: #3651d4; }
 
-    /* Steps */
     .step {
       background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       margin-bottom: 20px; overflow: hidden; display: none;
@@ -55,7 +52,6 @@
     .step-header h2 { font-size: 1.15rem; font-weight: 600; }
     .step-content { padding: 24px; }
 
-    /* Upload */
     .upload-area {
       border: 2.5px dashed #ccc; border-radius: 14px; padding: 40px 20px;
       text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
@@ -73,7 +69,6 @@
     }
     textarea:focus { outline: none; border-color: #4361ee; }
 
-    /* Buttons */
     .btn {
       display: inline-block; padding: 12px 28px; border: none; border-radius: 8px;
       font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 16px;
@@ -84,14 +79,11 @@
     .btn.secondary { background: #e9ecef; color: #495057; }
     .btn.secondary:hover:not(:disabled) { background: #dee2e6; }
 
-    /* Section Cards */
     .section-card {
       border: 1px solid #eee; border-radius: 10px;
       margin-bottom: 4px; overflow: hidden; transition: all 0.2s;
-      position: relative;
     }
     .section-card.selected { border-color: #4361ee; box-shadow: 0 0 0 1px #4361ee; }
-    .section-card.merge-target { border-color: #f59e0b; background: #fffbeb; }
     .section-card-header {
       display: flex; gap: 12px; padding: 14px 16px; cursor: pointer; transition: background 0.2s;
     }
@@ -111,7 +103,6 @@
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
 
-    /* Section action buttons */
     .section-actions {
       display: flex; gap: 4px; padding: 0 16px 10px; flex-wrap: wrap;
     }
@@ -121,29 +112,21 @@
       color: #555; white-space: nowrap;
     }
     .section-actions button:hover { background: #f0f3ff; border-color: #4361ee; color: #4361ee; }
-    .section-actions button.danger:hover { background: #fff0f0; border-color: #e53e3e; color: #e53e3e; }
 
-    /* Merge connector */
-    .merge-connector {
-      text-align: center; padding: 2px 0; display: none;
-    }
-    .merge-connector.visible { display: block; }
+    .merge-connector { text-align: center; padding: 2px 0; }
     .merge-connector button {
       font-size: 0.72rem; padding: 3px 12px; border: 1px dashed #f59e0b;
       background: #fffbeb; border-radius: 12px; cursor: pointer; color: #b45309;
-      transition: all 0.15s;
     }
     .merge-connector button:hover { background: #fef3c7; border-style: solid; }
 
-    /* Per-section diagram type picker */
     .section-type-picker { display: none; padding: 0 16px 16px; border-top: 1px solid #f0f0f0; }
     .section-card.selected .section-type-picker { display: block; }
     .section-type-picker h4 {
-      font-size: 0.75rem; font-weight: 600; color: #888;
-      margin: 12px 0 8px; letter-spacing: 0.5px;
+      font-size: 0.75rem; font-weight: 600; color: #888; margin: 12px 0 8px; letter-spacing: 0.5px;
     }
     .type-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 6px;
     }
     .type-grid label { display: block; }
     .type-grid input { display: none; }
@@ -170,6 +153,9 @@
     }
     .diagram-card-header h3 { font-size: 1rem; font-weight: 600; }
     .diagram-card-body { padding: 24px; display: flex; justify-content: center; overflow-x: auto; }
+    .diagram-card-body img {
+      max-width: 100%; height: auto; border-radius: 8px;
+    }
     .diagram-summary {
       padding: 12px 18px; background: #f0f3ff; border-top: 1px solid #e8ecff;
       font-size: 0.88rem; color: #444; line-height: 1.6;
@@ -182,7 +168,6 @@
     .btn-sm:hover { background: #f0f3ff; border-color: #4361ee; }
     .actions { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
 
-    /* Loading */
     .loading {
       position: fixed; inset: 0; background: rgba(255,255,255,0.85);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -213,7 +198,7 @@
   <div class="container">
     <header>
       <h1>記事広告 作図生成ツール</h1>
-      <p class="subtitle">記事原稿から理解促進用の図を自動生成します</p>
+      <p class="subtitle">記事原稿から理解促進用の高品質画像を自動生成します</p>
     </header>
 
     <div class="api-key-bar">
@@ -249,11 +234,11 @@
       </div>
       <div class="step-content">
         <p class="hint-text">
-          チェックで作図対象を選択。各セクションごとに図のタイプを指定できます。<br>
+          チェックで作図対象を選択。各セクションごとに画像の種類を指定できます。<br>
           「結合」で隣のセクションと統合、「分割」でセクションをさらに細かく分けられます。
         </p>
         <div id="sectionsList"></div>
-        <button id="generateBtn" class="btn primary" disabled>選択した文脈の図を生成</button>
+        <button id="generateBtn" class="btn primary" disabled>選択した文脈の画像を生成</button>
       </div>
     </section>
 
@@ -261,7 +246,7 @@
     <section id="step3" class="step">
       <div class="step-header">
         <span class="step-number">3</span>
-        <h2>生成された図</h2>
+        <h2>生成された画像</h2>
       </div>
       <div class="step-content">
         <div id="diagramsOutput"></div>
@@ -280,28 +265,45 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  mermaid.initialize({
-    startOnLoad: false, theme: "default", securityLevel: "loose",
-    fontFamily: '"Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif',
-  });
 
-  const DIAGRAM_TYPES = {
-    flowchart:    { icon: "🔀", name: "フローチャート",     desc: "手順・プロセスの流れ",       category: "基本",       mermaid: "フローチャート（flowchart TD）" },
-    mindmap:      { icon: "🧠", name: "マインドマップ",     desc: "概念の関連・全体像",         category: "基本",       mermaid: "マインドマップ（mindmap）" },
-    timeline:     { icon: "📅", name: "タイムライン",       desc: "時系列の変化",               category: "基本",       mermaid: "タイムライン（timeline）" },
-    beforeafter:  { icon: "🔄", name: "ビフォーアフター",   desc: "使用前後の変化",             category: "通販LP向け", mermaid: "ビフォーアフター比較図（flowchart LR で左に『Before』右に『After』のsubgraphを配置し、矢印で変化を示す）" },
-    problem:      { icon: "💡", name: "悩み→解決",          desc: "課題から解決策への流れ",     category: "通販LP向け", mermaid: "悩み→解決フロー（flowchart TD で上部に悩み・課題を赤系ノード、下部に解決策・効果を緑系ノードで配置。スタイルでfill色を指定）" },
-    uservoice:    { icon: "💬", name: "ユーザーの声",       desc: "口コミ・体験談の整理",       category: "通販LP向け", mermaid: "ユーザーの声・体験談まとめ（flowchart TD で中央に商品ノード、周囲に吹き出し風ノードで各ユーザーの声を配置）" },
-    comparison:   { icon: "⚖️", name: "商品比較表",         desc: "他社比較・スペック比較",     category: "通販LP向け", mermaid: "比較表（flowchart LR でsubgraphを並べて各項目の比較をノードで表現）" },
-    ingredients:  { icon: "🧪", name: "成分・特徴",         desc: "成分や機能の分解",           category: "通販LP向け", mermaid: "成分・特徴の構造図（mindmap で中央に商品名、枝に各成分・特徴とその効果を配置）" },
-    steps:        { icon: "👣", name: "使い方ステップ",     desc: "使用方法の手順",             category: "通販LP向け", mermaid: "使い方ステップ図（flowchart TD でSTEP1→STEP2→STEP3...の縦フロー、各ステップにアイコン的ラベル付き）" },
-    ranking:      { icon: "🏆", name: "ランキング",         desc: "順位・人気度の可視化",       category: "通販LP向け", mermaid: "ランキング図（flowchart TD で1位→2位→3位の縦並び、各ノードに順位と項目名。1位ノードは太枠で強調）" },
-    evidence:     { icon: "📊", name: "実績・数字",         desc: "データや数値の図解",         category: "信頼・説得", mermaid: "実績・数字の図解（flowchart LR で各実績数値を大きなラベルのノードで横並びに配置）" },
-    mechanism:    { icon: "⚙️", name: "メカニズム",         desc: "なぜ効くのか・仕組み",       category: "信頼・説得", mermaid: "メカニズム説明図（flowchart TD で原因→作用→結果の因果関係を矢印で示す）" },
-    guarantee:    { icon: "🛡️", name: "安心・保証",         desc: "保証内容・安心ポイント",     category: "信頼・説得", mermaid: "安心ポイントまとめ（flowchart TD で中央に『安心のポイント』ノード、放射状に各保証・安心要素を接続）" },
-    faq:          { icon: "❓", name: "FAQ",                desc: "よくある質問と回答",         category: "信頼・説得", mermaid: "FAQ図（flowchart TD でQ→Aのペアを縦に並べて配置。Qノードは青系、Aノードは緑系で色分け）" },
+  // ============================================================
+  // Image type definitions for article LP
+  // ============================================================
+  const IMAGE_TYPES = {
+    // 基本
+    flowchart:   { icon: "🔀", name: "フローチャート",     desc: "手順・プロセスの流れ",       category: "基本",
+      prompt: "Clean, professional infographic-style FLOWCHART diagram. Vertical flow with numbered steps connected by arrows. Each step in a rounded rectangle with an icon. Modern flat design, white background, corporate blue (#4361EE) and gray color scheme. Japanese text labels. No photographic elements — pure vector/illustration style." },
+    mindmap:     { icon: "🧠", name: "マインドマップ",     desc: "概念の関連・全体像",         category: "基本",
+      prompt: "Professional MIND MAP infographic. Central concept in a large circle, branches radiating outward with sub-topics in smaller bubbles. Color-coded branches (blue, green, orange, purple). Clean white background, modern flat design, Japanese text labels. No photos — pure vector/illustration style." },
+    timeline:    { icon: "📅", name: "タイムライン",       desc: "時系列の変化",               category: "基本",
+      prompt: "Elegant horizontal TIMELINE infographic. Key events/milestones marked along a line with icons and short Japanese text descriptions above and below. Alternating colors for each milestone. Clean white background, modern flat design. No photos." },
+    // 通販LP向け
+    beforeafter: { icon: "🔄", name: "ビフォーアフター",   desc: "使用前後の変化",             category: "通販LP向け",
+      prompt: "Split-screen BEFORE/AFTER comparison infographic. Left side labeled 'Before' with muted/gray tones showing the problem state, right side labeled 'After' with vibrant/warm tones showing the improved state. A prominent arrow from left to right. Icons and short Japanese text for each point. Clean white background, professional and persuasive design for product advertising." },
+    problem:     { icon: "💡", name: "悩み→解決",          desc: "課題から解決策への流れ",     category: "通販LP向け",
+      prompt: "Problem-to-Solution infographic for product advertising. Top section with RED/ORANGE warning-style boxes listing pain points and problems. A large downward ARROW labeled '解決' (solution). Bottom section with GREEN/BLUE boxes showing solutions and benefits. Icons for each item. Clean white background, Japanese text, modern flat design. Emotionally compelling — the reader should feel relief looking at the solution section." },
+    uservoice:   { icon: "💬", name: "お客様の声",         desc: "口コミ・体験談の整理",       category: "通販LP向け",
+      prompt: "Customer testimonial/review summary infographic. Multiple SPEECH BUBBLE cards arranged in a visually appealing layout, each containing a short Japanese quote, star rating, and a simple avatar icon. Warm, trustworthy color palette (soft yellows, greens). A central product/service icon. Clean white background, modern flat design. Builds social proof and trust." },
+    comparison:  { icon: "⚖️", name: "商品比較表",         desc: "他社比較・スペック比較",     category: "通販LP向け",
+      prompt: "Product COMPARISON TABLE infographic. Two or three columns comparing features — our product highlighted with a gold/blue 'BEST' badge. Check marks (✓) in green for advantages, X marks in gray for competitors. Clean white background, modern table design with alternating row colors. Japanese text labels. The reader should clearly see our product is superior." },
+    ingredients: { icon: "🧪", name: "成分・特徴",         desc: "成分や機能の分解",           category: "通販LP向け",
+      prompt: "Product INGREDIENTS/FEATURES breakdown infographic. Central product silhouette with labeled arrows pointing outward to ingredient/feature cards. Each card has an icon, ingredient name, and one-line benefit in Japanese. Color-coded by category (natural=green, science=blue, beauty=pink). Clean white background, premium and trustworthy feel." },
+    steps:       { icon: "👣", name: "使い方ステップ",     desc: "使用方法の手順",             category: "通販LP向け",
+      prompt: "Step-by-step HOW TO USE product guide infographic. 3-5 numbered steps arranged vertically or horizontally. Each step has a large number, a simple illustration/icon of the action, and a short Japanese instruction. Connecting arrows or dotted lines between steps. Clean white background, friendly pastel colors, modern flat design. Should look easy and approachable." },
+    ranking:     { icon: "🏆", name: "ランキング",         desc: "順位・人気度の可視化",       category: "通販LP向け",
+      prompt: "RANKING/TOP LIST infographic. Podium-style or numbered list with gold (#1), silver (#2), bronze (#3) styling. Each item has a medal icon, name, and key stat. The #1 item is visually larger and more prominent. Clean white background, modern flat design, Japanese text. Creates a sense of authority and popularity." },
+    // 信頼・説得
+    evidence:    { icon: "📊", name: "実績・数字",         desc: "データや数値の図解",         category: "信頼・説得",
+      prompt: "Data/STATISTICS infographic with large, bold numbers as the focal point. Key metrics displayed in large font with supporting icons and short Japanese descriptions. Include simple bar charts or pie charts. Color palette: corporate blue and white. Clean white background, modern flat design. The big numbers should grab attention and build credibility." },
+    mechanism:   { icon: "⚙️", name: "メカニズム",         desc: "なぜ効くのか・仕組み",       category: "信頼・説得",
+      prompt: "MECHANISM/How-it-works scientific infographic. A process diagram showing cause → action → effect with arrows. Semi-technical illustration style with molecular/cellular icons where appropriate. Color-coded stages (input=blue, process=purple, output=green). Clean white background, Japanese text labels. Should look credible and scientific without being intimidating." },
+    guarantee:   { icon: "🛡️", name: "安心・保証",         desc: "保証内容・安心ポイント",     category: "信頼・説得",
+      prompt: "Trust/GUARANTEE badge infographic. A central shield or seal icon surrounded by trust signals: guarantee period, certifications, return policy, customer support. Each item in a card with a check mark icon. Colors: navy blue and gold for premium trust feel. Clean white background, Japanese text. Should make the reader feel completely safe to purchase." },
+    faq:         { icon: "❓", name: "FAQ",                desc: "よくある質問と回答",         category: "信頼・説得",
+      prompt: "FAQ (Frequently Asked Questions) infographic. Q&A pairs in alternating colored cards — Questions in blue-tinted cards with a '?' icon, Answers in green-tinted cards with a '✓' icon. Clean accordion-style layout. White background, modern flat design, Japanese text. Should preemptively address concerns and remove purchase hesitation." },
   };
 
+  // --- DOM ---
   const apiKeyInput = document.getElementById("apiKeyInput");
   const saveKeyBtn = document.getElementById("saveKeyBtn");
   const keyStatus = document.getElementById("keyStatus");
@@ -339,8 +341,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   updateKeyStatus();
 
-  // --- Gemini API ---
-  async function callGemini(prompt, maxTokens = 16384) {
+  // --- Gemini Text API (2.5 Flash for text tasks) ---
+  async function callGeminiText(prompt, maxTokens = 16384) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("APIキーが設定されていません。上部にGemini APIキーを入力してください。");
     const response = await fetch(
@@ -356,15 +358,54 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      if (response.status === 400 || response.status === 403) throw new Error("APIキーが無効です。正しいGemini APIキーを設定してください。");
+      if (response.status === 400 || response.status === 403) throw new Error("APIキーが無効です。");
       throw new Error(err.error?.message || `API Error: ${response.status}`);
     }
     const data = await response.json();
     const candidate = data.candidates?.[0];
-    if (!candidate?.content?.parts) throw new Error("APIからの応答が空です。もう一度お試しください。");
+    if (!candidate?.content?.parts) throw new Error("APIからの応答が空です。");
     const textParts = candidate.content.parts.filter(p => !p.thought && p.text);
-    if (textParts.length === 0) throw new Error("APIからのテキスト応答がありません。");
+    if (textParts.length === 0) throw new Error("テキスト応答がありません。");
     return textParts.map(p => p.text).join("\n");
+  }
+
+  // --- Gemini Image API (3.1 Flash Image Preview) ---
+  async function callGeminiImage(prompt) {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("APIキーが設定されていません。");
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ["TEXT", "IMAGE"],
+          },
+        }),
+      }
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Image API Error: ${response.status}`);
+    }
+    const data = await response.json();
+    const parts = data.candidates?.[0]?.content?.parts;
+    if (!parts) throw new Error("画像生成の応答が空です。");
+
+    let imageData = null;
+    let textContent = "";
+    for (const part of parts) {
+      if (part.inlineData) {
+        imageData = part.inlineData; // { mimeType, data (base64) }
+      }
+      if (part.text) {
+        textContent += part.text;
+      }
+    }
+    if (!imageData) throw new Error("画像が生成されませんでした。プロンプトを変更して再試行してください。");
+    return { imageData, textContent };
   }
 
   // --- Step 1: Upload ---
@@ -384,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
   articleText.addEventListener("input", updateSplitBtn);
   function updateSplitBtn() { splitBtn.disabled = !articleText.value.trim(); }
 
-  // --- Split Article (fine-grained) ---
+  // --- Split Article ---
   splitBtn.addEventListener("click", async () => {
     const text = articleText.value.trim();
     if (!text) return;
@@ -409,8 +450,8 @@ document.addEventListener("DOMContentLoaded", () => {
 記事原稿:
 ${text}`;
 
-      const result = await callGemini(prompt);
-      const cleaned = result.replace(/\`\`\`json\s*/g, "").replace(/\`\`\`\s*/g, "").trim();
+      const result = await callGeminiText(prompt);
+      const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
       const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error("セクション分割の解析に失敗しました。APIレスポンス: " + result.substring(0, 200));
       sections = JSON.parse(jsonMatch[0]);
@@ -423,11 +464,11 @@ ${text}`;
   });
 
   // ============================
-  // Step 2: Section editing UI
+  // Step 2: Section editing
   // ============================
   function buildTypePickerHTML(uid) {
     const categories = {};
-    for (const [key, t] of Object.entries(DIAGRAM_TYPES)) {
+    for (const [key, t] of Object.entries(IMAGE_TYPES)) {
       if (!categories[t.category]) categories[t.category] = [];
       categories[t.category].push({ key, ...t });
     }
@@ -446,7 +487,6 @@ ${text}`;
   function renderSections() {
     sectionsList.innerHTML = "";
     sections.forEach((sec, i) => {
-      // Merge connector (between sections)
       if (i > 0) {
         const conn = document.createElement("div");
         conn.className = "merge-connector";
@@ -454,7 +494,6 @@ ${text}`;
         conn.querySelector("button").addEventListener("click", () => mergeSections(i - 1, i));
         sectionsList.appendChild(conn);
       }
-
       const uid = `s${i}-${Date.now()}`;
       const card = document.createElement("div");
       card.className = "section-card";
@@ -476,79 +515,50 @@ ${text}`;
         </div>
         <div class="section-type-picker">${buildTypePickerHTML(uid)}</div>
       `;
-
-      // Checkbox toggle
       const header = card.querySelector(".section-card-header");
       header.addEventListener("click", (e) => {
-        if (e.target.tagName !== "INPUT") {
-          const cb = card.querySelector("input[type=checkbox]");
-          cb.checked = !cb.checked;
-        }
+        if (e.target.tagName !== "INPUT") { const cb = card.querySelector("input[type=checkbox]"); cb.checked = !cb.checked; }
         card.classList.toggle("selected", card.querySelector("input[type=checkbox]").checked);
-        updateMergeConnectors();
         updateGenerateBtn();
       });
-
-      // Split button
       const splitBtnEl = card.querySelector("[data-split]");
       if (splitBtnEl) splitBtnEl.addEventListener("click", (e) => { e.stopPropagation(); splitSection(i); });
-
-      // Merge next button
       const mergeBtn = card.querySelector("[data-merge-next]");
       if (mergeBtn) mergeBtn.addEventListener("click", (e) => { e.stopPropagation(); mergeSections(i, i + 1); });
-
       sectionsList.appendChild(card);
     });
-    updateMergeConnectors();
     updateGenerateBtn();
-  }
-
-  function updateMergeConnectors() {
-    // Show merge connectors between adjacent selected cards
-    const connectors = sectionsList.querySelectorAll(".merge-connector");
-    connectors.forEach(c => c.classList.remove("visible"));
   }
 
   function updateGenerateBtn() {
     generateBtn.disabled = sectionsList.querySelectorAll("input[type=checkbox]:checked").length === 0;
   }
 
-  // --- Merge two adjacent sections ---
   function mergeSections(idxA, idxB) {
     if (idxA < 0 || idxB >= sections.length) return;
-    const a = sections[idxA];
-    const b = sections[idxB];
-    const merged = {
-      title: a.title.length >= b.title.length ? a.title : b.title,
-      content: a.content + "\n" + b.content,
-    };
-    sections.splice(idxA, 2, merged);
+    const a = sections[idxA], b = sections[idxB];
+    sections.splice(idxA, 2, { title: a.title.length >= b.title.length ? a.title : b.title, content: a.content + "\n" + b.content });
     renderSections();
   }
 
-  // --- Split a section using Gemini ---
   async function splitSection(idx) {
     const sec = sections[idx];
     showLoading(`「${sec.title}」を分割中...`);
     try {
       const prompt = `以下のテキストを、さらに細かい意味のまとまりに分割してください。
 最低2つ以上のセクションに分けてください。1文〜2文の短いセクションでもOKです。
-
 ルール:
 - 各セクションには「title」（15文字以内の要約）と「content」（原文テキスト）を含める
 - JSON配列のみ返してください
 
 テキスト:
 ${sec.content}`;
-
-      const result = await callGemini(prompt, 8192);
-      const cleaned = result.replace(/\`\`\`json\s*/g, "").replace(/\`\`\`\s*/g, "").trim();
+      const result = await callGeminiText(prompt, 8192);
+      const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
       const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error("分割に失敗しました");
       const subSections = JSON.parse(jsonMatch[0]);
       if (subSections.length < 2) throw new Error("これ以上分割できません");
-
-      // Replace the section with sub-sections
       sections.splice(idx, 1, ...subSections);
       renderSections();
     } catch (err) {
@@ -556,7 +566,9 @@ ${sec.content}`;
     } finally { hideLoading(); }
   }
 
-  // --- Generate Diagrams ---
+  // ============================
+  // Generate Images
+  // ============================
   generateBtn.addEventListener("click", async () => {
     const cards = sectionsList.querySelectorAll(".section-card");
     const selected = [];
@@ -565,119 +577,126 @@ ${sec.content}`;
       if (!cb.checked) return;
       const idx = parseInt(cb.dataset.index);
       const typeRadio = card.querySelector("input[type=radio]:checked");
-      selected.push({ idx, diagramType: typeRadio ? typeRadio.value : "flowchart" });
+      selected.push({ idx, imageType: typeRadio ? typeRadio.value : "flowchart" });
     });
     if (selected.length === 0) return;
 
-    showLoading("図を生成中...");
+    showLoading("画像を生成中...");
     generatedDiagrams = [];
     diagramsOutput.innerHTML = "";
 
     try {
       for (let i = 0; i < selected.length; i++) {
-        const { idx, diagramType } = selected[i];
+        const { idx, imageType } = selected[i];
         const section = sections[idx];
-        const typeInfo = DIAGRAM_TYPES[diagramType] || DIAGRAM_TYPES.flowchart;
-        loadingText.textContent = `図を生成中... (${i + 1}/${selected.length}) ${section.title}`;
+        const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.flowchart;
+        loadingText.textContent = `画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
 
-        const diagramPrompt = `以下の記事セクションの内容を読者が視覚的に理解できるよう、Mermaid.js の${typeInfo.mermaid}として作図してください。
+        // Build the image generation prompt
+        const imagePrompt = buildImagePrompt(section, typeInfo);
+        const { imageData, textContent } = await callGeminiImage(imagePrompt);
 
-ルール:
-- 記事の内容を正確に反映すること
-- 読者の理解を促進する構成にすること
-- 通販の記事LP（ランディングページ）に挿入される図であることを意識し、読みやすくわかりやすい構成にすること
-- ノードのテキストは簡潔に（各ノード20文字以内）
-- 日本語で記述すること
-- Mermaid.jsの正しい構文で出力すること
-- コードブロック（\`\`\`mermaid ... \`\`\`）の中身だけを返してください
-- ノードIDには日本語やスペースを使わず、英数字のみを使ってください
-- ノードのラベルは["テキスト"] の形式で日本語を囲んでください
-- subgraphのタイトルも日本語OKです
-- style文でノードに色を付ける場合、fill,stroke,colorの形式で指定してください
-
-セクションタイトル: ${section.title}
-セクション内容:
-${section.content}`;
-
-        const mermaidRaw = await callGemini(diagramPrompt);
-        const mermaidCode = mermaidRaw.replace(/```mermaid\s*/g, "").replace(/```\s*/g, "").trim();
-
+        // Get summary via text model
         const summaryPrompt = `以下の記事セクションの内容を、図の説明文として1〜2文で要約してください。
 セクションタイトル: ${section.title}
 セクション内容: ${section.content}`;
-        const summary = await callGemini(summaryPrompt, 512);
+        const summary = await callGeminiText(summaryPrompt, 512);
 
-        generatedDiagrams.push({ title: section.title, typeName: typeInfo.name, mermaidCode, summary: summary.trim() });
+        generatedDiagrams.push({
+          title: section.title,
+          typeName: typeInfo.name,
+          imageData,
+          summary: summary.trim(),
+        });
       }
-      await renderDiagrams();
+      renderDiagrams();
       showStep("step3");
     } catch (err) {
       showError(stepsEl.step2.querySelector(".step-content"), err.message);
     } finally { hideLoading(); }
   });
 
-  async function renderDiagrams() {
+  function buildImagePrompt(section, typeInfo) {
+    return `あなたはプロのインフォグラフィックデザイナーです。
+通販の記事LP（ランディングページ）に挿入する、読者の理解促進とコンバージョン率向上のための高品質な図解画像を生成してください。
+
+【画像の目的】
+- 記事LPの読了率を高める：スクロールの手を止めさせ、内容を直感的に理解させる
+- コンバージョン率を上げる：商品の価値・信頼性を視覚的に訴求する
+- 読者の不安を解消し、購入への心理的障壁を下げる
+
+【デザイン要件】
+${typeInfo.prompt}
+
+【コンテンツ】
+セクションタイトル: ${section.title}
+セクション内容:
+${section.content}
+
+【重要なルール】
+- 画像内のテキストはすべて日本語で記載すること
+- 記事の内容を正確に反映すること
+- 文字は大きく読みやすく、スマートフォンでも視認できるサイズにすること
+- プロフェッショナルで信頼感のあるデザインにすること
+- 写真やリアルな人物は使わず、フラットデザインのイラスト・アイコン・図解スタイルにすること
+- 背景は白または非常に薄い色にして、記事本文との調和を保つこと
+- 情報の優先順位を視覚的に明確にすること（サイズ、色の濃淡、配置で）`;
+  }
+
+  function renderDiagrams() {
     diagramsOutput.innerHTML = "";
     for (let i = 0; i < generatedDiagrams.length; i++) {
       const d = generatedDiagrams[i];
       const card = document.createElement("div");
       card.className = "diagram-card";
-      const diagramId = `mermaid-${i}-${Date.now()}`;
+      const imgSrc = `data:${d.imageData.mimeType || d.imageData.mime_type || "image/png"};base64,${d.imageData.data}`;
+
       card.innerHTML = `
         <div class="diagram-card-header">
           <h3>${esc(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(d.typeName)}</span></h3>
           <div class="diagram-actions">
-            <button class="btn-sm" data-action="copy-svg" data-id="${diagramId}">SVGコピー</button>
-            <button class="btn-sm" data-action="dl-svg" data-id="${diagramId}" data-title="${esc(d.title)}">SVG DL</button>
-            <button class="btn-sm" data-action="dl-png" data-id="${diagramId}" data-title="${esc(d.title)}">PNG DL</button>
+            <button class="btn-sm" data-action="dl-png" data-index="${i}">PNGダウンロード</button>
           </div>
         </div>
-        <div class="diagram-card-body"><div class="mermaid-container" id="${diagramId}"></div></div>
+        <div class="diagram-card-body">
+          <img src="${imgSrc}" alt="${esc(d.title)}">
+        </div>
         <div class="diagram-summary">${esc(d.summary)}</div>
       `;
       diagramsOutput.appendChild(card);
-      try {
-        const { svg } = await mermaid.render(diagramId + "-svg", d.mermaidCode);
-        card.querySelector(".mermaid-container").innerHTML = svg;
-      } catch (err) {
-        card.querySelector(".mermaid-container").innerHTML = `<div class="error-msg">図のレンダリングに失敗しました。<pre style="margin-top:8px;font-size:0.8rem;white-space:pre-wrap">${esc(d.mermaidCode)}</pre></div>`;
-      }
     }
   }
 
-  // --- Diagram Actions ---
+  // --- Download ---
   diagramsOutput.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
-    const { action, id, title } = btn.dataset;
-    const svg = document.getElementById(id)?.querySelector("svg");
-    if (!svg) return;
-    if (action === "copy-svg") {
-      navigator.clipboard.writeText(new XMLSerializer().serializeToString(svg)).then(() => alert("SVGコピーしました"));
-    } else if (action === "dl-svg") { dlSvg(svg, title || "diagram"); }
-    else if (action === "dl-png") { dlPng(svg, title || "diagram"); }
+    const idx = parseInt(btn.dataset.index);
+    const d = generatedDiagrams[idx];
+    if (!d) return;
+    downloadBase64Image(d.imageData, d.title);
   });
 
-  function dlSvg(svg, title) {
-    const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${title}.svg`; a.click(); URL.revokeObjectURL(a.href);
+  function downloadBase64Image(imageData, title) {
+    const mimeType = imageData.mimeType || imageData.mime_type || "image/png";
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const byteChars = atob(imageData.data);
+    const byteArray = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
-  function dlPng(svg, title) {
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement("canvas"); c.width = img.width * 2; c.height = img.height * 2;
-      const ctx = c.getContext("2d"); ctx.scale(2, 2); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0);
-      const a = document.createElement("a"); a.href = c.toDataURL("image/png"); a.download = `${title}.png`; a.click();
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-  }
+
+  downloadAllBtn.addEventListener("click", () => {
+    generatedDiagrams.forEach(d => downloadBase64Image(d.imageData, d.title));
+  });
 
   // --- Navigation ---
   backBtn.addEventListener("click", () => showStep("step2"));
-  downloadAllBtn.addEventListener("click", () => {
-    document.querySelectorAll(".diagram-card-body svg").forEach((svg, i) => dlSvg(svg, generatedDiagrams[i]?.title || `diagram-${i}`));
-  });
 
   // --- Helpers ---
   function showStep(id) { Object.values(stepsEl).forEach(s => s.classList.remove("active")); stepsEl[id].classList.add("active"); window.scrollTo({ top: 0, behavior: "smooth" }); }
@@ -686,7 +705,7 @@ ${section.content}`;
   function showError(container, msg) {
     const ex = container.querySelector(".error-msg"); if (ex) ex.remove();
     const el = document.createElement("div"); el.className = "error-msg"; el.textContent = msg;
-    container.appendChild(el); setTimeout(() => el.remove(), 8000);
+    container.appendChild(el); setTimeout(() => el.remove(), 10000);
   }
   function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 });
