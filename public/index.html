@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>記事広告 作図生成ツール</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>記事広告 作図生成ツール</h1>
+      <p class="subtitle">記事原稿から理解促進用の図を自動生成します</p>
+    </header>
+
+    <!-- Step 1: Upload -->
+    <section id="step1" class="step active">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <h2>記事原稿をアップロード</h2>
+      </div>
+      <div class="step-content">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📄</div>
+          <p>テキストファイルをドラッグ&ドロップ<br>またはクリックして選択</p>
+          <input type="file" id="fileInput" accept=".txt,.md,.text" hidden>
+        </div>
+        <div class="divider"><span>または</span></div>
+        <textarea id="articleText" placeholder="記事原稿をここに貼り付けてください..."></textarea>
+        <button id="splitBtn" class="btn primary" disabled>文脈を分析する</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Section Selection -->
+    <section id="step2" class="step">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <h2>作図する文脈を選択</h2>
+      </div>
+      <div class="step-content">
+        <div id="sectionsList"></div>
+        <div class="diagram-type-selector">
+          <h3>図の種類を選択</h3>
+          <div class="type-options">
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="flowchart" checked>
+              <span class="type-card">
+                <span class="type-icon">🔀</span>
+                <span class="type-name">フローチャート</span>
+                <span class="type-desc">手順・プロセスの流れ</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="mindmap">
+              <span class="type-card">
+                <span class="type-icon">🧠</span>
+                <span class="type-name">マインドマップ</span>
+                <span class="type-desc">概念の関連性</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="sequence">
+              <span class="type-card">
+                <span class="type-icon">↕️</span>
+                <span class="type-name">シーケンス図</span>
+                <span class="type-desc">やり取りの流れ</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="timeline">
+              <span class="type-card">
+                <span class="type-icon">📅</span>
+                <span class="type-name">タイムライン</span>
+                <span class="type-desc">時系列の整理</span>
+              </span>
+            </label>
+            <label class="type-option">
+              <input type="radio" name="diagramType" value="comparison">
+              <span class="type-card">
+                <span class="type-icon">⚖️</span>
+                <span class="type-name">比較・構造図</span>
+                <span class="type-desc">項目の比較整理</span>
+              </span>
+            </label>
+          </div>
+        </div>
+        <button id="generateBtn" class="btn primary" disabled>選択した文脈の図を生成</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Generated Diagrams -->
+    <section id="step3" class="step">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <h2>生成された図</h2>
+      </div>
+      <div class="step-content">
+        <div id="diagramsOutput"></div>
+        <div class="actions">
+          <button id="backBtn" class="btn secondary">文脈選択に戻る</button>
+          <button id="downloadAllBtn" class="btn primary">すべてダウンロード</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p id="loadingText">分析中...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
