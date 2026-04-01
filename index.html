@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Gemini Image API (try multiple models with timeout) ---
   const IMAGE_MODELS = [
     "gemini-2.0-flash-preview-image-generation",
-    "gemini-3.1-flash-image-preview",
+    "gemini-2.0-flash-exp",
   ];
 
   async function callGeminiImage(prompt) {
@@ -410,7 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function callGeminiImageWithModel(apiKey, model, prompt) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout
 
     try {
       const response = await fetch(
@@ -679,30 +679,16 @@ ${sec.content}`;
   });
 
   function buildImagePrompt(section, typeInfo) {
-    return `あなたはプロのインフォグラフィックデザイナーです。
-通販の記事LP（ランディングページ）に挿入する、読者の理解促進とコンバージョン率向上のための高品質な図解画像を生成してください。
+    // Keep prompt concise for faster image generation
+    return `Generate an image for a Japanese product advertisement landing page.
 
-【画像の目的】
-- 記事LPの読了率を高める：スクロールの手を止めさせ、内容を直感的に理解させる
-- コンバージョン率を上げる：商品の価値・信頼性を視覚的に訴求する
-- 読者の不安を解消し、購入への心理的障壁を下げる
+Style: ${typeInfo.prompt}
 
-【デザイン要件】
-${typeInfo.prompt}
+Content to visualize:
+Title: ${section.title}
+Text: ${section.content.substring(0, 300)}
 
-【コンテンツ】
-セクションタイトル: ${section.title}
-セクション内容:
-${section.content}
-
-【重要なルール】
-- 画像内のテキストはすべて日本語で記載すること
-- 記事の内容を正確に反映すること
-- 文字は大きく読みやすく、スマートフォンでも視認できるサイズにすること
-- プロフェッショナルで信頼感のあるデザインにすること
-- 写真やリアルな人物は使わず、フラットデザインのイラスト・アイコン・図解スタイルにすること
-- 背景は白または非常に薄い色にして、記事本文との調和を保つこと
-- 情報の優先順位を視覚的に明確にすること（サイズ、色の濃淡、配置で）`;
+Rules: All text in the image MUST be in Japanese. Professional advertising quality. 16:9 aspect ratio.`;
   }
 
   function renderDiagrams() {
