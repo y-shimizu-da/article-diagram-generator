@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Gemini Image API (try multiple models with timeout) ---
   const IMAGE_MODELS = [
     "gemini-2.0-flash-preview-image-generation",
-    "gemini-2.0-flash-exp",
+    "gemini-2.5-flash-preview-image-generation",
   ];
 
   async function callGeminiImage(prompt) {
@@ -397,12 +397,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         console.warn(`[Image] Model ${model} failed:`, err.message);
         lastError = err;
-        // If it's a timeout or model not found, try next model
-        if (err.message.includes("timeout") || err.message.includes("not found") || err.message.includes("404")) {
-          continue;
-        }
-        // For other errors (e.g. safety, quota), throw immediately
-        throw err;
+        // Try next model for any error
+        continue;
       }
     }
     throw lastError || new Error("すべての画像生成モデルが失敗しました。");
