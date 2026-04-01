@@ -377,52 +377,97 @@ document.addEventListener("DOMContentLoaded", () => {
     return textParts.map(p => p.text).join("\n");
   }
 
-  // --- Gemini Image API (3.1 Flash Image Preview) ---
+  // --- Gemini Image API (try multiple models with timeout) ---
+  const IMAGE_MODELS = [
+    "gemini-2.0-flash-preview-image-generation",
+    "gemini-3.1-flash-image-preview",
+  ];
+
   async function callGeminiImage(prompt) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("APIキーが設定されていません。");
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
-          },
-        }),
-      }
-    );
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Image API Error: ${response.status}`);
-    }
-    const data = await response.json();
-    const parts = data.candidates?.[0]?.content?.parts;
-    if (!parts) throw new Error("画像生成の応答が空です。");
 
-    let imageData = null;
-    let textContent = "";
-    for (const part of parts) {
-      // Handle both camelCase and snake_case keys from API
-      const inline = part.inlineData || part.inline_data;
-      if (inline) {
-        imageData = {
-          mimeType: inline.mimeType || inline.mime_type || "image/png",
-          data: inline.data,
-        };
-      }
-      if (part.text) {
-        textContent += part.text;
+    let lastError = null;
+    for (const model of IMAGE_MODELS) {
+      try {
+        console.log(`[Image] Trying model: ${model}`);
+        const result = await callGeminiImageWithModel(apiKey, model, prompt);
+        console.log(`[Image] Success with model: ${model}`);
+        return result;
+      } catch (err) {
+        console.warn(`[Image] Model ${model} failed:`, err.message);
+        lastError = err;
+        // If it's a timeout or model not found, try next model
+        if (err.message.includes("timeout") || err.message.includes("not found") || err.message.includes("404")) {
+          continue;
+        }
+        // For other errors (e.g. safety, quota), throw immediately
+        throw err;
       }
     }
-    if (!imageData) {
-      // Show part keys for debugging
-      const partKeys = parts.map(p => Object.keys(p).join(",")).join(" | ");
-      throw new Error("画像が生成されませんでした。レスポンス構造: [" + partKeys + "] テキスト: " + textContent.substring(0, 150));
+    throw lastError || new Error("すべての画像生成モデルが失敗しました。");
+  }
+
+  async function callGeminiImageWithModel(apiKey, model, prompt) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ["TEXT", "IMAGE"],
+            },
+          }),
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Image API Error: ${response.status} (${model})`);
+      }
+      const data = await response.json();
+      console.log("[Image] Response received, parsing...");
+
+      const candidate = data.candidates?.[0];
+      if (!candidate?.content?.parts) {
+        const finishReason = candidate?.finishReason || "unknown";
+        throw new Error(`画像生成の応答が空です (finishReason: ${finishReason}, model: ${model})`);
+      }
+      const parts = candidate.content.parts;
+
+      let imageData = null;
+      let textContent = "";
+      for (const part of parts) {
+        const inline = part.inlineData || part.inline_data;
+        if (inline) {
+          imageData = {
+            mimeType: inline.mimeType || inline.mime_type || "image/png",
+            data: inline.data,
+          };
+        }
+        if (part.text) textContent += part.text;
+      }
+      if (!imageData) {
+        const partKeys = parts.map(p => Object.keys(p).join(",")).join(" | ");
+        throw new Error(`画像なし (parts: [${partKeys}]) model: ${model}, text: ${textContent.substring(0, 100)}`);
+      }
+      return { imageData, textContent };
+
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === "AbortError") {
+        throw new Error(`画像生成がタイムアウトしました (90秒, model: ${model})。再度お試しください。`);
+      }
+      throw err;
     }
-    return { imageData, textContent };
   }
 
   // --- Step 1: Upload ---
