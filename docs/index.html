@@ -690,62 +690,83 @@ ${sec.content}`;
   });
 
   function buildImagePrompt(section, typeInfo) {
-    return `Generate an image for a Japanese product advertisement landing page.
+    return `Generate a visually rich background image for a Japanese product advertisement landing page. Text will be overlaid later in post-processing.
 
-Style: ${typeInfo.prompt}
+Style and layout: ${typeInfo.prompt}
 
-Content to visualize:
-Title: ${section.title}
-Text: ${section.content.substring(0, 300)}
+Theme of the content: ${section.title}
+Context: ${section.content.substring(0, 200)}
 
-Rules: All text in the image MUST be in Japanese. Professional advertising quality. 16:9 aspect ratio.`;
+CRITICAL RULES:
+- DO NOT include any readable text, words, numbers, or characters — no Japanese, no English, no symbols
+- Instead of text, use abstract shapes, blurred placeholder blocks, or empty styled areas where text would go
+- Keep the visual layout, colors, icons, illustrations, and overall composition as if text was present
+- The image must have clear visual zones/areas for text to be placed on top later
+- Professional advertising quality. 16:9 aspect ratio. High contrast between text zones and visual elements.`;
   }
 
   // --- Generate text overlay plan via Gemini Text API ---
   async function generateTextPlan(section, typeInfo) {
-    const prompt = `以下の記事セクションの内容を元に、通販記事LPの画像に重ねる日本語テキストのレイアウトを設計してください。
+    const prompt = `通販記事LPの画像(1280x720)に重ねる日本語テキストのレイアウトを設計してください。
+背景画像はテキストなしで生成済みです。その上にテキストを配置します。
 
 画像タイプ: ${typeInfo.name}（${typeInfo.desc}）
 セクションタイトル: ${section.title}
-セクション内容: ${section.content.substring(0, 500)}
+セクション内容: ${section.content.substring(0, 400)}
 
-以下のJSON形式で返してください。JSONのみ返し、他のテキストは含めないでください。
+JSONのみ返してください:
 {
   "texts": [
     {
-      "text": "表示するテキスト",
+      "text": "テキスト",
       "x": 0.5,
       "y": 0.15,
-      "fontSize": 0.06,
+      "fontSize": 0.07,
       "color": "#FFFFFF",
       "fontWeight": "bold",
       "strokeColor": "#000000",
-      "strokeWidth": 2,
-      "maxWidth": 0.9
+      "strokeWidth": 3,
+      "maxWidth": 0.85
     }
   ]
 }
 
-ルール:
-- x, y は画像の幅・高さに対する割合（0〜1）。(0.5, 0.5)が中央
-- fontSize は画像の高さに対する割合（0.03=小, 0.05=中, 0.08=大, 0.12=特大）
-- maxWidth は画像幅に対するテキスト折返し幅の割合
-- メインの見出しは大きく目立つように（fontSize: 0.08〜0.12）
-- サブテキストは小さめに（fontSize: 0.03〜0.05）
-- 記事の内容のキーワードや数字を大きく強調してください
-- テキストは3〜7個程度。多すぎないこと
-- 暗い背景の上のテキストは白+黒縁取り（strokeColor:#000000, strokeWidth:3）
-- 明るい背景の上のテキストは濃色+bgColorで半透明背景パッド（例: bgColor:"rgba(255,255,255,0.7)"）
-- strokeColor/strokeWidthは文字の縁取り。不要なら strokeWidth: 0
-- bgColorはテキストの背景色。不要なら省略
-- 原稿の内容を正確に反映すること
-- AI生成画像の上にテキストを重ねるので、画像のレイアウトに合った位置にテキストを配置すること`;
+重要ルール:
+- x,y は画像幅・高さに対する割合(0〜1)。x:0.5=横中央
+- fontSize は画像高さに対する割合。0.04=小, 0.06=中, 0.09=大, 0.13=特大
+- maxWidth はテキスト折返し幅(画像幅に対する割合)
+- テキストは最大5個まで。少なくシンプルに
+- ★最重要: テキスト同士が絶対に重ならないこと！
+  各テキストのy座標は、前のテキストのy + (そのfontSize × 1.5) 以上離すこと
+  例: 1個目 y:0.12(fontSize:0.09) → 2個目は y:0.12+0.09×1.5=0.255 以上
+- メイン見出し1つを最も大きく(fontSize:0.09〜0.13)、画像の上部1/3に配置
+- サブテキスト(fontSize:0.04〜0.06)は中央〜下部に配置
+- テキストは縦に順番に並べる（上から下へ）
+- 白テキスト+黒縁取り(strokeWidth:3)が基本。明るい部分にはbgColor:"rgba(0,0,0,0.5)"を追加
+- 原稿の内容を正確に反映すること`;
 
     const result = await callGeminiText(prompt, 4096);
     const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { texts: [{ text: section.title, x: 0.5, y: 0.5, fontSize: 0.08, color: "#FFFFFF", fontWeight: "bold", strokeColor: "#000000", strokeWidth: 3, maxWidth: 0.9 }] };
-    return JSON.parse(jsonMatch[0]);
+    if (!jsonMatch) return { texts: [{ text: section.title, x: 0.5, y: 0.3, fontSize: 0.1, color: "#FFFFFF", fontWeight: "bold", strokeColor: "#000000", strokeWidth: 4, maxWidth: 0.85 }] };
+    const plan = JSON.parse(jsonMatch[0]);
+
+    // Post-process: ensure no overlapping texts
+    if (plan.texts && plan.texts.length > 1) {
+      plan.texts.sort((a, b) => (a.y || 0) - (b.y || 0));
+      for (let i = 1; i < plan.texts.length; i++) {
+        const prev = plan.texts[i - 1];
+        const minGap = (prev.fontSize || 0.05) * 1.8;
+        if ((plan.texts[i].y || 0) < (prev.y || 0) + minGap) {
+          plan.texts[i].y = (prev.y || 0) + minGap;
+        }
+      }
+      // Clamp all texts within 0.05 ~ 0.95
+      for (const t of plan.texts) {
+        t.y = Math.max(0.05, Math.min(0.95, t.y || 0.5));
+      }
+    }
+    return plan;
   }
 
   // --- Composite image + text on Canvas ---
