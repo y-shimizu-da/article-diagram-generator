@@ -647,9 +647,7 @@ ${sec.content}`;
         const { idx, imageType } = selected[i];
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.flowchart;
-        loadingText.textContent = `画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
-
-        // Step A: Generate background image (no text)
+        // Step A: Generate background image
         loadingText.textContent = `背景画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
         const imagePrompt = buildImagePrompt(section, typeInfo);
         const { imageData } = await callGeminiImage(imagePrompt);
@@ -690,19 +688,13 @@ ${sec.content}`;
   });
 
   function buildImagePrompt(section, typeInfo) {
-    return `Generate a visually rich background image for a Japanese product advertisement landing page. Text will be overlaid later in post-processing.
+    return `Japanese product advertisement background image.
 
-Style and layout: ${typeInfo.prompt}
+${typeInfo.prompt}
 
-Theme of the content: ${section.title}
-Context: ${section.content.substring(0, 200)}
+Theme: ${section.title}
 
-CRITICAL RULES:
-- DO NOT include any readable text, words, numbers, or characters — no Japanese, no English, no symbols
-- Instead of text, use abstract shapes, blurred placeholder blocks, or empty styled areas where text would go
-- Keep the visual layout, colors, icons, illustrations, and overall composition as if text was present
-- The image must have clear visual zones/areas for text to be placed on top later
-- Professional advertising quality. 16:9 aspect ratio. High contrast between text zones and visual elements.`;
+Only visual elements, illustrations, icons, colors, and layout. No text or letters. 16:9 ratio.`;
   }
 
   // --- Generate text overlay plan via Gemini Text API ---
