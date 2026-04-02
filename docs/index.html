@@ -688,74 +688,67 @@ ${sec.content}`;
   });
 
   function buildImagePrompt(section, typeInfo) {
-    return `Japanese product advertisement background image.
+    return `Japanese advertisement background image for a landing page. Soft, approachable, lifestyle photography feel. Slightly soft-focus filter for warmth and trustworthiness.
 
 ${typeInfo.prompt}
 
 Theme: ${section.title}
 
-Only visual elements, illustrations, icons, colors, and layout. No text or letters. 16:9 ratio.`;
+Visual only — no text, letters, numbers, or characters. Leave clear empty space for text overlay. 16:9 ratio.`;
   }
 
   // --- Generate text overlay plan via Gemini Text API ---
   async function generateTextPlan(section, typeInfo) {
-    const prompt = `通販記事LPの画像(1280x720)に重ねる日本語テキストのレイアウトを設計してください。
-背景画像はテキストなしで生成済みです。その上にテキストを配置します。
+    const prompt = `通販記事LPの画像(1280x720)に重ねるテキストレイアウトを設計してください。
 
-画像タイプ: ${typeInfo.name}（${typeInfo.desc}）
-セクションタイトル: ${section.title}
-セクション内容: ${section.content.substring(0, 400)}
+画像タイプ: ${typeInfo.name}
+セクション: ${section.title}
+内容: ${section.content.substring(0, 400)}
 
 JSONのみ返してください:
-{
-  "texts": [
-    {
-      "text": "テキスト",
-      "x": 0.5,
-      "y": 0.15,
-      "fontSize": 0.07,
-      "color": "#FFFFFF",
-      "fontWeight": "bold",
-      "strokeColor": "#000000",
-      "strokeWidth": 3,
-      "maxWidth": 0.85
-    }
-  ]
-}
+{"texts":[{"text":"テキスト","x":0.5,"y":0.15,"fontSize":0.08,"color":"#FFFFFF","fontWeight":"bold","maxWidth":0.8}]}
 
-重要ルール:
-- x,y は画像幅・高さに対する割合(0〜1)。x:0.5=横中央
-- fontSize は画像高さに対する割合。0.04=小, 0.06=中, 0.09=大, 0.13=特大
-- maxWidth はテキスト折返し幅(画像幅に対する割合)
-- テキストは最大5個まで。少なくシンプルに
-- ★最重要: テキスト同士が絶対に重ならないこと！
-  各テキストのy座標は、前のテキストのy + (そのfontSize × 1.5) 以上離すこと
-  例: 1個目 y:0.12(fontSize:0.09) → 2個目は y:0.12+0.09×1.5=0.255 以上
-- メイン見出し1つを最も大きく(fontSize:0.09〜0.13)、画像の上部1/3に配置
-- サブテキスト(fontSize:0.04〜0.06)は中央〜下部に配置
-- テキストは縦に順番に並べる（上から下へ）
-- 白テキスト+黒縁取り(strokeWidth:3)が基本。明るい部分にはbgColor:"rgba(0,0,0,0.5)"を追加
-- 原稿の内容を正確に反映すること`;
+★絶対ルール:
+1. テキストは最大3個。メイン見出し1つ + サブ1〜2個のみ
+2. 情報の優先順位を明確に。最も伝えたいことを1つ選び、それだけを大きく
+3. 似た内容は統合する（「疲れる」「だるい」「気力がない」→「毎日ヘトヘト…」に統合）
+4. テキストは上から下へ順番に配置。間隔は十分に空ける:
+   - メイン見出し: y=0.20, fontSize=0.10〜0.13
+   - サブテキスト1: y=0.55, fontSize=0.04〜0.06
+   - サブテキスト2: y=0.80, fontSize=0.04〜0.06
+5. x,y は画像サイズに対する割合(0〜1)
+6. fontSize は画像高さに対する割合
+7. maxWidth は折返し幅（画像幅に対する割合）。0.8以下推奨
+8. 色は全て白(#FFFFFF)でOK。Canvasで自動的にドロップシャドウを付けます
+9. 原稿の内容を正確に反映すること
+10. 散りばめ型の配置は禁止。必ず縦に整列させること`;
 
     const result = await callGeminiText(prompt, 4096);
     const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { texts: [{ text: section.title, x: 0.5, y: 0.3, fontSize: 0.1, color: "#FFFFFF", fontWeight: "bold", strokeColor: "#000000", strokeWidth: 4, maxWidth: 0.85 }] };
-    const plan = JSON.parse(jsonMatch[0]);
+    if (!jsonMatch) return { texts: [{ text: section.title, x: 0.5, y: 0.25, fontSize: 0.11, color: "#FFFFFF", fontWeight: "bold", maxWidth: 0.8 }] };
+    let plan = JSON.parse(jsonMatch[0]);
 
-    // Post-process: ensure no overlapping texts
-    if (plan.texts && plan.texts.length > 1) {
+    // Post-process: enforce max 3 texts, sort, prevent overlap
+    if (plan.texts) {
+      plan.texts = plan.texts.slice(0, 4); // max 4 just in case
       plan.texts.sort((a, b) => (a.y || 0) - (b.y || 0));
+      // Force all x to center for clean layout
+      for (const t of plan.texts) {
+        t.x = 0.5;
+        t.maxWidth = Math.min(t.maxWidth || 0.8, 0.85);
+      }
+      // Ensure no overlap: min gap = fontSize * 2.5
       for (let i = 1; i < plan.texts.length; i++) {
         const prev = plan.texts[i - 1];
-        const minGap = (prev.fontSize || 0.05) * 1.8;
+        const prevLines = Math.ceil((prev.text || "").length / 15) || 1; // rough line count
+        const minGap = (prev.fontSize || 0.05) * (1.5 + prevLines * 0.5);
         if ((plan.texts[i].y || 0) < (prev.y || 0) + minGap) {
           plan.texts[i].y = (prev.y || 0) + minGap;
         }
       }
-      // Clamp all texts within 0.05 ~ 0.95
       for (const t of plan.texts) {
-        t.y = Math.max(0.05, Math.min(0.95, t.y || 0.5));
+        t.y = Math.max(0.08, Math.min(0.92, t.y || 0.5));
       }
     }
     return plan;
@@ -772,7 +765,7 @@ JSONのみ返してください:
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
-        // Draw AI-generated image (with its garbled text — gives good layout)
+        // Draw background
         const imgRatio = img.width / img.height;
         const canvasRatio = canvasWidth / canvasHeight;
         let sx = 0, sy = 0, sw = img.width, sh = img.height;
@@ -785,13 +778,17 @@ JSONのみ返してください:
         }
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasWidth, canvasHeight);
 
-        // Overlay correct Japanese text
+        // Slight dark overlay for text readability
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Render text overlays
         if (textPlan?.texts) {
           for (const t of textPlan.texts) {
             const x = (t.x || 0.5) * canvasWidth;
             const y = (t.y || 0.5) * canvasHeight;
             const fontSize = Math.round((t.fontSize || 0.05) * canvasHeight);
-            const maxWidth = (t.maxWidth || 0.9) * canvasWidth;
+            const maxWidth = (t.maxWidth || 0.8) * canvasWidth;
             const weight = t.fontWeight || "bold";
 
             ctx.font = `${weight} ${fontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif`;
@@ -799,30 +796,29 @@ JSONのみ返してください:
             ctx.textBaseline = "middle";
 
             const lines = wrapText(ctx, t.text, maxWidth);
-            const lineHeight = fontSize * 1.35;
+            const lineHeight = fontSize * 1.4;
             const startY = y - ((lines.length - 1) * lineHeight) / 2;
-
-            // Draw text background pad for readability
-            if (t.bgColor) {
-              const pad = fontSize * 0.3;
-              for (let li = 0; li < lines.length; li++) {
-                const lw = ctx.measureText(lines[li]).width;
-                const ly = startY + li * lineHeight;
-                ctx.fillStyle = t.bgColor;
-                ctx.fillRect(x - lw / 2 - pad, ly - fontSize / 2 - pad * 0.5, lw + pad * 2, fontSize + pad);
-              }
-            }
 
             lines.forEach((line, li) => {
               const ly = startY + li * lineHeight;
-              // Stroke outline for readability
-              if (t.strokeWidth && t.strokeWidth > 0) {
-                ctx.strokeStyle = t.strokeColor || "#000000";
-                ctx.lineWidth = t.strokeWidth || 3;
-                ctx.lineJoin = "round";
-                ctx.miterLimit = 2;
-                ctx.strokeText(line, x, ly);
-              }
+
+              // Drop shadow (soft, offset)
+              ctx.save();
+              ctx.shadowColor = "rgba(0,0,0,0.7)";
+              ctx.shadowBlur = fontSize * 0.3;
+              ctx.shadowOffsetX = fontSize * 0.05;
+              ctx.shadowOffsetY = fontSize * 0.08;
+              ctx.fillStyle = "rgba(0,0,0,0.01)"; // invisible fill to cast shadow
+              ctx.fillText(line, x, ly);
+              ctx.restore();
+
+              // Stroke outline
+              ctx.strokeStyle = "rgba(0,0,0,0.8)";
+              ctx.lineWidth = Math.max(3, fontSize * 0.08);
+              ctx.lineJoin = "round";
+              ctx.miterLimit = 2;
+              ctx.strokeText(line, x, ly);
+
               // Fill text
               ctx.fillStyle = t.color || "#FFFFFF";
               ctx.fillText(line, x, ly);
@@ -833,7 +829,7 @@ JSONのみ返してください:
         canvas.toBlob((blob) => resolve(blob), "image/png");
       };
       img.onerror = () => {
-        ctx.fillStyle = "#f0f0f0";
+        ctx.fillStyle = "#333";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         canvas.toBlob((blob) => resolve(blob), "image/png");
       };
