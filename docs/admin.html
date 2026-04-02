@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>参考画像 管理ツール</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: #f0f2f5; color: #1a1a2e; min-height: 100vh;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+    header { text-align: center; margin-bottom: 32px; }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
+    .subtitle { color: #666; margin-top: 6px; font-size: 0.95rem; }
+    .nav-link { margin-top: 10px; }
+    .nav-link a { color: #4361ee; text-decoration: none; font-size: 0.9rem; }
+    .nav-link a:hover { text-decoration: underline; }
+
+    .card {
+      background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 24px; border-bottom: 1px solid #eee; cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: #fafbff; }
+    .card-header .toggle { font-size: 0.8rem; color: #999; transition: transform 0.2s; }
+    .card-header .toggle.open { transform: rotate(90deg); }
+    .card-header h2 { font-size: 1.15rem; font-weight: 600; flex: 1; }
+    .card-header .badge {
+      font-size: 0.75rem; background: #e9ecef; color: #666;
+      padding: 2px 10px; border-radius: 12px;
+    }
+    .card-body { padding: 24px; display: none; }
+    .card-body.open { display: block; }
+
+    /* Upload area */
+    .upload-section {
+      border: 2.5px dashed #ccc; border-radius: 14px; padding: 30px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
+      margin-bottom: 20px;
+    }
+    .upload-section:hover, .upload-section.dragover { border-color: #4361ee; background: #f8f9ff; }
+    .upload-icon { font-size: 2rem; margin-bottom: 6px; }
+    .upload-section p { color: #888; font-size: 0.85rem; line-height: 1.5; }
+
+    /* Subtype selector */
+    .subtype-selector { margin-bottom: 16px; }
+    .subtype-selector label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: #555; }
+    .subtype-selector select {
+      width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 0.9rem; background: #fff; color: #333; cursor: pointer;
+    }
+    .subtype-selector select:focus { outline: none; border-color: #4361ee; }
+
+    /* Image grid */
+    .image-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;
+    }
+    .image-item {
+      border: 1px solid #eee; border-radius: 10px; overflow: hidden;
+      transition: box-shadow 0.2s; position: relative;
+    }
+    .image-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .image-item img {
+      width: 100%; height: 150px; object-fit: cover; display: block; background: #f5f5f5;
+    }
+    .image-item .info {
+      padding: 10px 12px; font-size: 0.78rem;
+    }
+    .image-item .info .subtype-label {
+      display: inline-block; background: #eef1ff; color: #4361ee;
+      padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-bottom: 4px;
+    }
+    .image-item .info .filename { color: #666; word-break: break-all; }
+    .image-item .info .size-label { color: #999; font-size: 0.7rem; }
+    .image-item .actions {
+      display: flex; gap: 4px; padding: 0 10px 10px;
+    }
+    .image-item .actions button {
+      flex: 1; padding: 5px 8px; font-size: 0.72rem; border: 1px solid #ddd;
+      background: #fff; border-radius: 5px; cursor: pointer; transition: all 0.15s;
+    }
+    .image-item .actions .btn-download:hover { background: #f0f3ff; border-color: #4361ee; color: #4361ee; }
+    .image-item .actions .btn-remove { color: #c33; }
+    .image-item .actions .btn-remove:hover { background: #fff0f0; border-color: #c33; }
+
+    /* Export bar */
+    .export-bar {
+      background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 20px 24px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .export-bar .summary { flex: 1; min-width: 200px; }
+    .export-bar .summary .count { font-size: 1.1rem; font-weight: 700; color: #4361ee; }
+    .export-bar .summary .label { font-size: 0.85rem; color: #666; }
+    .btn {
+      display: inline-block; padding: 12px 28px; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.primary { background: #4361ee; color: #fff; }
+    .btn.primary:hover:not(:disabled) { background: #3651d4; }
+    .btn.secondary { background: #e9ecef; color: #495057; }
+    .btn.secondary:hover:not(:disabled) { background: #dee2e6; }
+    .btn.sm { padding: 8px 18px; font-size: 0.85rem; }
+    .btn.danger { background: #dc3545; color: #fff; }
+    .btn.danger:hover:not(:disabled) { background: #c82333; }
+
+    .empty-state {
+      text-align: center; padding: 30px; color: #aaa; font-size: 0.9rem;
+    }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: #333; color: #fff;
+      padding: 12px 20px; border-radius: 8px; font-size: 0.9rem;
+      z-index: 1000; opacity: 0; transform: translateY(10px);
+      transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 600px) {
+      .container { padding: 12px 8px 40px; }
+      header h1 { font-size: 1.4rem; }
+      .image-grid { grid-template-columns: repeat(2, 1fr); }
+      .export-bar { flex-direction: column; align-items: stretch; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>参考画像 管理ツール</h1>
+      <p class="subtitle">参考画像をカテゴリ分けしてリポジトリ用にエクスポートします</p>
+      <div class="nav-link"><a href="index.html">作図生成ツールに戻る</a></div>
+    </header>
+
+    <div class="export-bar">
+      <div class="summary">
+        <span class="count" id="totalCount">0</span>
+        <span class="label"> 枚の画像が登録済み</span>
+      </div>
+      <button class="btn sm secondary" id="exportManifestBtn" disabled>manifest.json をダウンロード</button>
+      <button class="btn sm primary" id="exportAllBtn" disabled>全画像を一括ダウンロード</button>
+      <button class="btn sm danger" id="clearAllBtn" disabled>すべてクリア</button>
+    </div>
+
+    <div id="categorySections"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ============================================================
+  // Category & subtype definitions (matching IMAGE_TYPES)
+  // ============================================================
+  const CATEGORIES = [
+    {
+      id: "empathy",
+      name: "悩み・共感",
+      icon: "😰",
+      subtypes: [
+        { id: "pain_photo", name: "悩み訴求（写真風）", desc: "暗めの背景+悩みテキスト散りばめ" },
+        { id: "pain_deny",  name: "否定訴求（×マーク）", desc: "不要なものに×印+太字テキスト" },
+      ]
+    },
+    {
+      id: "product",
+      name: "商品訴求",
+      icon: "💄",
+      subtypes: [
+        { id: "product_features", name: "機能まとめ（アイコン）", desc: "商品中央+周囲に機能アイコン" },
+        { id: "product_scene",    name: "使用シーン",          desc: "商品の使用写真+効果テキスト" },
+        { id: "easy_use",         name: "簡単さアピール",       desc: "簡単な動作の写真+太字メリット" },
+      ]
+    },
+    {
+      id: "proof",
+      name: "比較・証明",
+      icon: "🔄",
+      subtypes: [
+        { id: "before_after",   name: "ビフォーアフター（イラスト）", desc: "左右分割のイラスト比較" },
+        { id: "price_compare",  name: "価格比較（左右対比）",        desc: "従来コスト vs 本商品の価格比較" },
+        { id: "expert_endorse", name: "専門家推薦",                desc: "プロの推薦コメント+写真" },
+      ]
+    },
+    {
+      id: "steps",
+      name: "ポイント・手順",
+      icon: "📋",
+      subtypes: [
+        { id: "points_list",  name: "ポイントまとめ",       desc: "番号付きポイント一覧リスト" },
+        { id: "step_flow",    name: "手順フロー（イラスト）", desc: "ステップ図解+かわいいイラスト" },
+        { id: "payment_flow", name: "支払い方法説明",        desc: "支払い手順のイラストフロー" },
+      ]
+    },
+    {
+      id: "cta",
+      name: "CTA・緊急性",
+      icon: "⚠️",
+      subtypes: [
+        { id: "campaign_gold",  name: "キャンペーン見出し",    desc: "ゴールド背景+大見出し" },
+        { id: "discount_appeal", name: "割引訴求（イラスト）",  desc: "イラスト+割引率の大文字" },
+        { id: "cost_per_use",   name: "コスパ訴求",          desc: "イラスト+インパクトのある単価表示" },
+        { id: "urgency_notice", name: "緊急性・注意喚起",     desc: "警告風カード+注意テキスト" },
+      ]
+    },
+  ];
+
+  // State: array of { id, filename, category, subtype, dataUrl, width, height, size }
+  let images = JSON.parse(localStorage.getItem("admin_ref_images") || "[]");
+
+  const MAX_W = 800;
+  const MAX_H = 600;
+
+  // ============================================================
+  // Render
+  // ============================================================
+  function render() {
+    const container = document.getElementById("categorySections");
+    container.innerHTML = "";
+
+    CATEGORIES.forEach(cat => {
+      const catImages = images.filter(img => img.category === cat.id);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-header" data-cat="${cat.id}">
+          <span class="toggle open">&#9654;</span>
+          <h2>${cat.icon} ${cat.name}</h2>
+          <span class="badge">${catImages.length} 枚</span>
+        </div>
+        <div class="card-body open" id="body-${cat.id}">
+          <div class="subtype-selector">
+            <label>サブタイプを選択してからアップロード:</label>
+            <select id="select-${cat.id}">
+              ${cat.subtypes.map(st => `<option value="${st.id}">${st.name} - ${st.desc}</option>`).join("")}
+            </select>
+          </div>
+          <div class="upload-section" id="upload-${cat.id}">
+            <div class="upload-icon">📁</div>
+            <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
+            <input type="file" accept="image/*" multiple hidden id="file-${cat.id}">
+          </div>
+          <div class="image-grid" id="grid-${cat.id}">
+            ${catImages.length === 0
+              ? '<div class="empty-state">このカテゴリにはまだ画像がありません</div>'
+              : catImages.map(img => renderImageItem(img)).join("")}
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+
+      // Toggle collapse
+      const header = card.querySelector(".card-header");
+      const body = card.querySelector(".card-body");
+      const toggle = card.querySelector(".toggle");
+      header.addEventListener("click", () => {
+        body.classList.toggle("open");
+        toggle.classList.toggle("open");
+      });
+
+      // Upload area events
+      const uploadArea = card.querySelector(`#upload-${cat.id}`);
+      const fileInput = card.querySelector(`#file-${cat.id}`);
+
+      uploadArea.addEventListener("click", () => fileInput.click());
+      uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+      uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+      uploadArea.addEventListener("drop", e => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        const subtype = document.getElementById(`select-${cat.id}`).value;
+        handleFiles(Array.from(e.dataTransfer.files), cat.id, subtype);
+      });
+      fileInput.addEventListener("change", e => {
+        const subtype = document.getElementById(`select-${cat.id}`).value;
+        handleFiles(Array.from(e.target.files), cat.id, subtype);
+        e.target.value = "";
+      });
+
+      // Image action buttons (delegated)
+      const grid = card.querySelector(`#grid-${cat.id}`);
+      grid.addEventListener("click", e => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const imgId = btn.dataset.id;
+        if (btn.classList.contains("btn-download")) downloadImage(imgId);
+        if (btn.classList.contains("btn-remove")) removeImage(imgId);
+      });
+    });
+
+    updateCounts();
+  }
+
+  function renderImageItem(img) {
+    const subtypeInfo = findSubtype(img.subtype);
+    return `
+      <div class="image-item">
+        <img src="${img.dataUrl}" alt="${img.filename}" loading="lazy">
+        <div class="info">
+          <span class="subtype-label">${subtypeInfo ? subtypeInfo.name : img.subtype}</span>
+          <div class="filename">${img.filename}</div>
+          <div class="size-label">${img.width}x${img.height}</div>
+        </div>
+        <div class="actions">
+          <button class="btn-download" data-id="${img.id}">DL</button>
+          <button class="btn-remove" data-id="${img.id}">削除</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function findSubtype(subtypeId) {
+    for (const cat of CATEGORIES) {
+      const found = cat.subtypes.find(s => s.id === subtypeId);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function updateCounts() {
+    document.getElementById("totalCount").textContent = images.length;
+    const hasImages = images.length > 0;
+    document.getElementById("exportManifestBtn").disabled = !hasImages;
+    document.getElementById("exportAllBtn").disabled = !hasImages;
+    document.getElementById("clearAllBtn").disabled = !hasImages;
+  }
+
+  // ============================================================
+  // Image processing
+  // ============================================================
+  function handleFiles(files, categoryId, subtypeId) {
+    const imageFiles = files.filter(f => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) {
+      showToast("画像ファイルを選択してください");
+      return;
+    }
+
+    let processed = 0;
+    imageFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          resizeImage(img, file.name, (resizedDataUrl, w, h) => {
+            const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+            const ext = file.name.split(".").pop().toLowerCase();
+            const safeName = `${subtypeId}_${id}.${ext === "png" ? "png" : "jpg"}`;
+
+            images.push({
+              id,
+              filename: safeName,
+              originalName: file.name,
+              category: categoryId,
+              subtype: subtypeId,
+              dataUrl: resizedDataUrl,
+              width: w,
+              height: h,
+              addedAt: new Date().toISOString(),
+            });
+
+            processed++;
+            if (processed === imageFiles.length) {
+              saveState();
+              render();
+              showToast(`${imageFiles.length} 枚の画像を追加しました`);
+            }
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resizeImage(img, filename, callback) {
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+
+    if (w > MAX_W || h > MAX_H) {
+      const ratio = Math.min(MAX_W / w, MAX_H / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const ext = filename.split(".").pop().toLowerCase();
+    const mime = ext === "png" ? "image/png" : "image/jpeg";
+    const quality = mime === "image/jpeg" ? 0.85 : undefined;
+    const dataUrl = canvas.toDataURL(mime, quality);
+
+    callback(dataUrl, w, h);
+  }
+
+  // ============================================================
+  // Actions
+  // ============================================================
+  function downloadImage(imgId) {
+    const img = images.find(i => i.id === imgId);
+    if (!img) return;
+    triggerDownload(img.dataUrl, img.filename);
+  }
+
+  function removeImage(imgId) {
+    images = images.filter(i => i.id !== imgId);
+    saveState();
+    render();
+    showToast("画像を削除しました");
+  }
+
+  function generateManifest() {
+    return images.map(img => ({
+      filename: img.filename,
+      category: img.category,
+      subtype: img.subtype,
+      width: img.width,
+      height: img.height,
+      addedAt: img.addedAt,
+    }));
+  }
+
+  function exportManifest() {
+    const manifest = generateManifest();
+    const json = JSON.stringify(manifest, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    triggerDownload(url, "manifest.json");
+    URL.revokeObjectURL(url);
+    showToast("manifest.json をダウンロードしました");
+  }
+
+  function exportAllImages() {
+    if (images.length === 0) return;
+
+    // Download manifest first
+    exportManifest();
+
+    // Then download each image with a small delay to avoid browser blocking
+    let delay = 500;
+    images.forEach((img, i) => {
+      setTimeout(() => {
+        triggerDownload(img.dataUrl, img.filename);
+        if (i === images.length - 1) {
+          showToast("全ファイルのダウンロードを開始しました");
+        }
+      }, delay * (i + 1));
+    });
+  }
+
+  function clearAll() {
+    if (!confirm("すべての画像を削除しますか？この操作は取り消せません。")) return;
+    images = [];
+    saveState();
+    render();
+    showToast("すべての画像を削除しました");
+  }
+
+  // ============================================================
+  // Utilities
+  // ============================================================
+  function triggerDownload(url, filename) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem("admin_ref_images", JSON.stringify(images));
+    } catch (e) {
+      showToast("保存エラー: ストレージ容量超過の可能性があります。画像を減らしてください。");
+    }
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
+  // ============================================================
+  // Event bindings
+  // ============================================================
+  document.getElementById("exportManifestBtn").addEventListener("click", exportManifest);
+  document.getElementById("exportAllBtn").addEventListener("click", exportAllImages);
+  document.getElementById("clearAllBtn").addEventListener("click", clearAll);
+
+  // Initial render
+  render();
+
+});
+</script>
+</body>
+</html>
