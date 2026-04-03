@@ -360,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Load reference images from admin page's localStorage ---
   function getRefImages() {
     try {
-      const data = JSON.parse(localStorage.getItem("refimg_admin_images") || "[]");
+      const data = JSON.parse(localStorage.getItem("admin_ref_images") || "[]");
       return data.filter(img => img.dataUrl); // only ones with image data
     } catch { return []; }
   }
