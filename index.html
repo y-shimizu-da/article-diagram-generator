@@ -168,6 +168,28 @@
     .btn-sm:hover { background: #f0f3ff; border-color: #4361ee; }
     .actions { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
 
+    /* Reference image picker */
+    .ref-picker { margin-top: 10px; }
+    .ref-picker h4 { font-size: 0.75rem; font-weight: 600; color: #e8788a; margin-bottom: 6px; }
+    .ref-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ref-thumb {
+      width: 100px; height: 66px; border: 2px solid #eee; border-radius: 6px;
+      overflow: hidden; cursor: pointer; transition: all 0.15s; position: relative;
+    }
+    .ref-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .ref-thumb:hover { border-color: #4361ee; }
+    .ref-thumb.selected { border-color: #e8788a; box-shadow: 0 0 0 2px #e8788a; }
+    .ref-thumb .ref-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      font-size: 0.55rem; background: rgba(0,0,0,0.6); color: #fff;
+      padding: 1px 4px; text-align: center; white-space: nowrap; overflow: hidden;
+    }
+    .ref-none {
+      font-size: 0.72rem; color: #aaa; padding: 8px;
+      border: 1px dashed #ddd; border-radius: 6px; text-align: center;
+    }
+    .ref-none a { color: #4361ee; }
+
     .loading {
       position: fixed; inset: 0; background: rgba(255,255,255,0.85);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -335,6 +357,18 @@ document.addEventListener("DOMContentLoaded", () => {
   let sections = [];
   let generatedDiagrams = [];
 
+  // --- Load reference images from admin page's localStorage ---
+  function getRefImages() {
+    try {
+      const data = JSON.parse(localStorage.getItem("refimg_admin_images") || "[]");
+      return data.filter(img => img.dataUrl); // only ones with image data
+    } catch { return []; }
+  }
+
+  function getRefImagesForType(subtypeKey) {
+    return getRefImages().filter(img => img.subtype === subtypeKey);
+  }
+
   // --- API Key ---
   function getApiKey() { return localStorage.getItem("gemini_api_key") || ""; }
   function updateKeyStatus() {
@@ -382,28 +416,27 @@ document.addEventListener("DOMContentLoaded", () => {
     "gemini-3.1-flash-image-preview",
   ];
 
-  async function callGeminiImage(prompt) {
+  async function callGeminiImage(prompt, referenceBase64 = null) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("APIキーが設定されていません。");
 
     let lastError = null;
     for (const model of IMAGE_MODELS) {
       try {
-        console.log(`[Image] Trying model: ${model}`);
-        const result = await callGeminiImageWithModel(apiKey, model, prompt);
+        console.log(`[Image] Trying model: ${model}, hasRef: ${!!referenceBase64}`);
+        const result = await callGeminiImageWithModel(apiKey, model, prompt, referenceBase64);
         console.log(`[Image] Success with model: ${model}`);
         return result;
       } catch (err) {
         console.warn(`[Image] Model ${model} failed:`, err.message);
         lastError = err;
-        // Try next model for any error
         continue;
       }
     }
     throw lastError || new Error("すべての画像生成モデルが失敗しました。");
   }
 
-  async function callGeminiImageWithModel(apiKey, model, prompt) {
+  async function callGeminiImageWithModel(apiKey, model, prompt, referenceBase64 = null) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout
 
@@ -415,7 +448,15 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts: [
+              ...(referenceBase64 ? [{
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: referenceBase64,
+                }
+              }] : []),
+              { text: prompt }
+            ] }],
             generationConfig: {
               responseModalities: ["TEXT", "IMAGE"],
             },
@@ -570,13 +611,28 @@ ${text}`;
           <button data-split="${i}">✂ このセクションを分割</button>
           ${i < sections.length - 1 ? `<button data-merge-next="${i}">⏬ 下と結合</button>` : ""}
         </div>
-        <div class="section-type-picker">${buildTypePickerHTML(uid)}</div>
+        <div class="section-type-picker">
+          ${buildTypePickerHTML(uid)}
+          <div class="ref-picker" id="refpicker-${i}"></div>
+        </div>
       `;
+
+      // Update reference images when type changes
+      const typeRadios = card.querySelectorAll(`input[name="dtype-${uid}"]`);
+      typeRadios.forEach(radio => {
+        radio.addEventListener("change", () => updateRefPicker(i, radio.value));
+      });
+
       const header = card.querySelector(".section-card-header");
       header.addEventListener("click", (e) => {
         if (e.target.tagName !== "INPUT") { const cb = card.querySelector("input[type=checkbox]"); cb.checked = !cb.checked; }
         card.classList.toggle("selected", card.querySelector("input[type=checkbox]").checked);
         updateGenerateBtn();
+        // Show ref images for default selected type
+        const checkedRadio = card.querySelector("input[type=radio]:checked");
+        if (checkedRadio && card.querySelector("input[type=checkbox]").checked) {
+          updateRefPicker(i, checkedRadio.value);
+        }
       });
       const splitBtnEl = card.querySelector("[data-split]");
       if (splitBtnEl) splitBtnEl.addEventListener("click", (e) => { e.stopPropagation(); splitSection(i); });
@@ -585,6 +641,39 @@ ${text}`;
       sectionsList.appendChild(card);
     });
     updateGenerateBtn();
+  }
+
+  function updateRefPicker(sectionIdx, subtypeKey) {
+    const picker = document.getElementById(`refpicker-${sectionIdx}`);
+    if (!picker) return;
+    const refs = getRefImagesForType(subtypeKey);
+    // Also get all refs for the category
+    const typeInfo = IMAGE_TYPES[subtypeKey];
+    const catRefs = typeInfo ? getRefImages().filter(r => {
+      const rt = IMAGE_TYPES[r.subtype];
+      return rt && rt.category === typeInfo.category;
+    }) : [];
+    const allRefs = [...new Map([...refs, ...catRefs].map(r => [r.id, r])).values()];
+
+    if (allRefs.length === 0) {
+      picker.innerHTML = `<h4>参考画像</h4><div class="ref-none">参考画像が未登録です。<a href="admin.html" target="_blank">管理画面</a>でアップロードしてください。</div>`;
+      return;
+    }
+    picker.innerHTML = `<h4>参考画像を選択（任意）</h4><div class="ref-grid">${allRefs.map(r =>
+      `<div class="ref-thumb" data-ref-id="${r.id}" data-section="${sectionIdx}">
+        <img src="${r.dataUrl}" alt="${r.subtype}">
+        <span class="ref-label">${esc(IMAGE_TYPES[r.subtype]?.name || r.subtype)}</span>
+      </div>`
+    ).join("")}</div>`;
+
+    picker.querySelectorAll(".ref-thumb").forEach(thumb => {
+      thumb.addEventListener("click", () => {
+        // Toggle selection
+        const wasSelected = thumb.classList.contains("selected");
+        picker.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
+        if (!wasSelected) thumb.classList.add("selected");
+      });
+    });
   }
 
   function updateGenerateBtn() {
@@ -629,12 +718,15 @@ ${sec.content}`;
   generateBtn.addEventListener("click", async () => {
     const cards = sectionsList.querySelectorAll(".section-card");
     const selected = [];
-    cards.forEach((card) => {
+    cards.forEach((card, cardIdx) => {
       const cb = card.querySelector("input[type=checkbox]");
       if (!cb.checked) return;
       const idx = parseInt(cb.dataset.index);
       const typeRadio = card.querySelector("input[type=radio]:checked");
-      selected.push({ idx, imageType: typeRadio ? typeRadio.value : "flowchart" });
+      // Get selected reference image
+      const selectedRef = card.querySelector(".ref-thumb.selected");
+      let refId = selectedRef ? selectedRef.dataset.refId : null;
+      selected.push({ idx, imageType: typeRadio ? typeRadio.value : "flowchart", refId });
     });
     if (selected.length === 0) return;
 
@@ -644,28 +736,43 @@ ${sec.content}`;
 
     try {
       for (let i = 0; i < selected.length; i++) {
-        const { idx, imageType } = selected[i];
+        const { idx, imageType, refId } = selected[i];
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.flowchart;
-        // Step A: Generate background image
-        loadingText.textContent = `背景画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
-        const imagePrompt = buildImagePrompt(section, typeInfo);
-        const { imageData } = await callGeminiImage(imagePrompt);
 
-        // Step B: Generate text overlay plan
-        loadingText.textContent = `テキスト配置を設計中... (${i + 1}/${selected.length}) ${section.title}`;
-        const textPlan = await generateTextPlan(section, typeInfo);
+        // Get reference image base64 if selected
+        let refBase64 = null;
+        if (refId) {
+          const refImg = getRefImages().find(r => r.id === refId);
+          if (refImg?.dataUrl) {
+            refBase64 = refImg.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
+          }
+        }
 
-        // Step C: Composite image + text on Canvas
-        loadingText.textContent = `画像を合成中... (${i + 1}/${selected.length}) ${section.title}`;
+        // Step A: Generate image (with reference if available)
+        loadingText.textContent = `画像を生成中... (${i + 1}/${selected.length}) ${section.title}${refBase64 ? " [参考画像あり]" : ""}`;
+        const imagePrompt = buildImagePrompt(section, typeInfo, !!refBase64);
+        const { imageData } = await callGeminiImage(imagePrompt, refBase64);
+
+        let compositeBlob;
         const mimeType = imageData.mimeType || imageData.mime_type || "image/png";
         const byteChars = atob(imageData.data);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-        const bgBlob = new Blob([byteArray], { type: mimeType });
-        const bgUrl = URL.createObjectURL(bgBlob);
-        const compositeBlob = await compositeImage(bgUrl, textPlan);
-        URL.revokeObjectURL(bgUrl);
+
+        if (refBase64) {
+          // Reference image mode: AI generates with text included, use directly
+          compositeBlob = new Blob([byteArray], { type: mimeType });
+        } else {
+          // No reference: background + Canvas text overlay
+          loadingText.textContent = `テキスト配置を設計中... (${i + 1}/${selected.length}) ${section.title}`;
+          const textPlan = await generateTextPlan(section, typeInfo);
+          loadingText.textContent = `画像を合成中... (${i + 1}/${selected.length}) ${section.title}`;
+          const bgBlob = new Blob([byteArray], { type: mimeType });
+          const bgUrl = URL.createObjectURL(bgBlob);
+          compositeBlob = await compositeImage(bgUrl, textPlan);
+          URL.revokeObjectURL(bgUrl);
+        }
 
         // Get summary
         const summaryPrompt = `以下の記事セクションの内容を、図の説明文として1〜2文で要約してください。
@@ -687,7 +794,15 @@ ${sec.content}`;
     } finally { hideLoading(); }
   });
 
-  function buildImagePrompt(section, typeInfo) {
+  function buildImagePrompt(section, typeInfo, hasReference = false) {
+    if (hasReference) {
+      return `添付の参考画像のスタイル・配色・レイアウト構造・トンマナを忠実に踏襲して、以下のテーマで新しい画像を生成してください。参考画像の雰囲気（色味、構図、デザイン要素の配置、フォントの使い方、装飾パーツ）をできるだけ再現しつつ、テキスト内容だけ変更してください。
+
+テーマ: ${section.title}
+内容: ${section.content.substring(0, 200)}
+
+画像内のテキストは日本語で記載。16:9比率。`;
+    }
     return `${typeInfo.prompt}
 
 Theme: ${section.title}
