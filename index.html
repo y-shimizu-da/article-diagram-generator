@@ -756,25 +756,19 @@ ${sec.content}`;
         const imagePrompt = buildImagePrompt(section, typeInfo, !!refBase64);
         const { imageData } = await callGeminiImage(imagePrompt, refBase64);
 
-        let compositeBlob;
+        // Always composite with Canvas for accurate Japanese text
         const mimeType = imageData.mimeType || imageData.mime_type || "image/png";
         const byteChars = atob(imageData.data);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
 
-        if (refBase64) {
-          // Reference image mode: AI generates with text included, use directly
-          compositeBlob = new Blob([byteArray], { type: mimeType });
-        } else {
-          // No reference: background + Canvas text overlay
-          loadingText.textContent = `テキスト配置を設計中... (${i + 1}/${selected.length}) ${section.title}`;
-          const textPlan = await generateTextPlan(section, typeInfo);
-          loadingText.textContent = `画像を合成中... (${i + 1}/${selected.length}) ${section.title}`;
-          const bgBlob = new Blob([byteArray], { type: mimeType });
-          const bgUrl = URL.createObjectURL(bgBlob);
-          compositeBlob = await compositeImage(bgUrl, textPlan);
-          URL.revokeObjectURL(bgUrl);
-        }
+        loadingText.textContent = `テキスト配置を設計中... (${i + 1}/${selected.length}) ${section.title}`;
+        const textPlan = await generateTextPlan(section, typeInfo);
+        loadingText.textContent = `画像を合成中... (${i + 1}/${selected.length}) ${section.title}`;
+        const bgBlob = new Blob([byteArray], { type: mimeType });
+        const bgUrl = URL.createObjectURL(bgBlob);
+        const compositeBlob = await compositeImage(bgUrl, textPlan);
+        URL.revokeObjectURL(bgUrl);
 
         // Get summary
         const summaryPrompt = `以下の記事セクションの内容を、図の説明文として1〜2文で要約してください。
@@ -798,12 +792,18 @@ ${sec.content}`;
 
   function buildImagePrompt(section, typeInfo, hasReference = false) {
     if (hasReference) {
-      return `添付の参考画像のスタイル・配色・レイアウト構造・トンマナを忠実に踏襲して、以下のテーマで新しい画像を生成してください。参考画像の雰囲気（色味、構図、デザイン要素の配置、フォントの使い方、装飾パーツ）をできるだけ再現しつつ、テキスト内容だけ変更してください。
+      return `添付の参考画像のスタイル・配色・レイアウト構造・トンマナを忠実に踏襲して、以下のテーマで新しい背景画像を生成してください。
+
+参考画像から再現すべき要素:
+- 全体の色味・配色（暖色系/寒色系/ダーク系など）
+- 構図・レイアウト（人物配置、余白の取り方、要素の配置バランス）
+- デザイン装飾（ブラシストローク、吹き出し、アイコン、バッジなどの装飾パーツ）
+- 雰囲気・トーン（シリアス/明るい/かわいい/高級感など）
 
 テーマ: ${section.title}
-内容: ${section.content.substring(0, 200)}
+内容の文脈: ${section.content.substring(0, 150)}
 
-画像内のテキストは日本語で記載。16:9比率。`;
+重要: テキスト・文字・数字は一切入れないでください。テキストは後から別途合成します。文字が入る場所にはぼかしたプレースホルダーか空白を残してください。16:9比率。`;
     }
     return `${typeInfo.prompt}
 
