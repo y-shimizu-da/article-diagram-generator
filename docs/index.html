@@ -438,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function callGeminiImageWithModel(apiKey, model, prompt, referenceBase64 = null) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout for image gen
 
     try {
       const response = await fetch(
@@ -500,7 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       clearTimeout(timeoutId);
       if (err.name === "AbortError") {
-        throw new Error(`画像生成がタイムアウトしました (90秒, model: ${model})。再度お試しください。`);
+        throw new Error(`画像生成がタイムアウトしました (5分, model: ${model})。再度お試しください。`);
       }
       throw err;
     }
@@ -740,12 +740,14 @@ ${sec.content}`;
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.flowchart;
 
-        // Get reference image base64 if selected
+        // Get reference image base64 if selected (compressed to max 512px)
         let refBase64 = null;
         if (refId) {
           const refImg = getRefImages().find(r => r.id === refId);
           if (refImg?.dataUrl) {
-            refBase64 = refImg.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
+            loadingText.textContent = `参考画像を準備中... (${i + 1}/${selected.length})`;
+            refBase64 = await compressRefImage(refImg.dataUrl, 512);
+            console.log(`[Ref] Compressed ref image: ${Math.round(refBase64.length / 1024)}KB`);
           }
         }
 
@@ -865,6 +867,33 @@ JSONのみ返してください:
       }
     }
     return plan;
+  }
+
+  // --- Compress reference image to reduce API payload ---
+  function compressRefImage(dataUrl, maxDim = 512) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        resolve(compressed.replace(/^data:image\/[^;]+;base64,/, ""));
+      };
+      img.onerror = () => {
+        // Fallback: return original
+        resolve(dataUrl.replace(/^data:image\/[^;]+;base64,/, ""));
+      };
+      img.src = dataUrl;
+    });
   }
 
   // --- Composite image + text on Canvas (LP-quality) ---
