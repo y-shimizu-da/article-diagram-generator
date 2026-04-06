@@ -416,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("APIキーが設定されていません。上部にGemini APIキーを入力してください。");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent`;
     const body = {
       contents: [{ parts }],
       generationConfig: {
