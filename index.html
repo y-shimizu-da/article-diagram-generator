@@ -696,7 +696,7 @@ ${sec.content}`;
   }
 
   // ============================
-  // Generate Images (1-stage: direct to image model)
+  // Generate Images (Hybrid: text model → copy, image model → visual, Canvas → composite)
   // ============================
   generateBtn.addEventListener("click", async () => {
     const cards = sectionsList.querySelectorAll(".section-card");
@@ -722,25 +722,31 @@ ${sec.content}`;
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
 
+        // === STEP 1: テキストモデルでコピー生成 ===
+        loadingText.textContent = `コピー生成中... (${i + 1}/${selected.length}) ${section.title}`;
+        const copyData = await generateCopy(section, typeInfo);
+        console.log("[Step1] copy:", copyData);
+
+        // === STEP 2: 画像モデルでビジュアル生成（テキストなし） ===
         loadingText.textContent = `画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
-
-        // Build API call parts (prompt + reference images directly)
-        const callParts = buildImageParts(section, typeInfo, refId);
-
-        // Single API call: prompt + ref images → finished image
+        const callParts = buildImageParts(section, typeInfo, refId, copyData);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
-        // Convert base64 to blob
+        // === STEP 3: Canvas合成（正確な日本語テキストを重ねる） ===
+        loadingText.textContent = `テキスト合成中... (${i + 1}/${selected.length}) ${section.title}`;
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-        const blob = new Blob([byteArray], { type: result.mimeType });
+        const bgBlob = new Blob([byteArray], { type: result.mimeType });
+        const bgUrl = URL.createObjectURL(bgBlob);
+        const compositeBlob = await compositeImage(bgUrl, copyData);
+        URL.revokeObjectURL(bgUrl);
 
         generatedDiagrams.push({
           title: section.title,
           typeName: typeInfo.name,
-          compositeBlob: blob,
-          summary: result.text || section.title,
+          compositeBlob,
+          summary: `${copyData.headline}${copyData.subtext ? " — " + copyData.subtext : ""}`,
         });
       }
       renderDiagrams();
@@ -750,18 +756,59 @@ ${sec.content}`;
     } finally { hideLoading(); }
   });
 
-  function buildImageParts(section, typeInfo, refId) {
+  // --- Step 1: テキストモデルでキャッチコピー生成 ---
+  async function generateCopy(section, typeInfo) {
+    const prompt = `あなたは通販LPのコピーライターです。以下の記事セクションに対して、広告画像に重ねるテキストを考えてください。
+
+【記事セクション】
+タイトル: ${section.title}
+内容: ${section.content.substring(0, 500)}
+
+【画像タイプ】
+${typeInfo.name}（${typeInfo.desc}）
+
+【出力ルール】
+- headline: メインのキャッチコピー（15文字以内、インパクト重視）
+- subtext: 補足テキスト（25文字以内、なければ空文字）
+- accentColor: テキスト背景の帯色（#RRGGBB形式、画像タイプの雰囲気に合う色）
+- headlinePosition: ヘッドラインの位置（"top", "center", "bottom" のいずれか）
+- JSONのみ返してください
+
+{"headline": "キャッチコピー", "subtext": "補足テキスト", "accentColor": "#FF6B6B", "headlinePosition": "top"}`;
+
+    try {
+      const result = await callGeminiText(prompt, 1024);
+      const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        headline: parsed.headline || section.title,
+        subtext: parsed.subtext || "",
+        accentColor: parsed.accentColor || "#FF6B6B",
+        headlinePosition: parsed.headlinePosition || "top",
+      };
+    } catch {
+      return { headline: section.title, subtext: "", accentColor: "#FF6B6B", headlinePosition: "top" };
+    }
+  }
+
+  // --- Step 2: 画像モデルでビジュアル生成（テキストなし） ---
+  function buildImageParts(section, typeInfo, refId, copyData) {
     const parts = [];
 
-    // Build the main prompt — detailed Japanese, like creative-generator
     const prompt = `あなたは広告クリエイティブデザイナーです。以下のルールを守って広告画像を生成してください。
 
+【最重要ルール】
+★ 画像内にテキスト・文字・数字・記号を一切含めないでください ★
+★ テキストは後から正確に合成するため、画像には絶対に文字を入れないでください ★
+
 【ルール】
-1. そのまま記事LPに挿入できる、完成された広告画像を出力してください。
-2. 「Design A」「パターン1」などのラベルや、デザインの説明文・注釈は画像内に入れないでください。
-3. 1つの完成されたクリエイティブとして出力してください。
-4. テキストは読みやすいフォントで出力してください。
-5. 画像サイズは1280×720pxの構図で作成してください。
+1. そのまま記事LPに挿入できるビジュアル素材を出力してください。
+2. テキストを後から重ねるため、以下の位置にテキスト用の余白・暗めのエリアを確保してください：
+   - ${copyData.headlinePosition === "top" ? "画像上部" : copyData.headlinePosition === "bottom" ? "画像下部" : "画像中央"}にメインテキスト用のスペース
+   ${copyData.subtext ? "- " + (copyData.headlinePosition === "top" ? "画像下部" : "画像上部") + "にサブテキスト用のスペース" : ""}
+3. 「Design A」「パターン1」などのラベルは入れないでください。
+4. 画像サイズは1280×720pxの構図で作成してください。
 
 【画像タイプ】
 ${typeInfo.name}（${typeInfo.desc}）
@@ -769,13 +816,11 @@ ${typeInfo.name}（${typeInfo.desc}）
 【デザインの方向性】
 ${typeInfo.prompt}
 
-【記事の内容】
+【記事の内容（画像の雰囲気の参考用）】
 タイトル: ${section.title}
-内容:
-${section.content.substring(0, 600)}
+内容: ${section.content.substring(0, 400)}
 
-上記の記事内容を元に、「${typeInfo.name}」スタイルの広告画像を生成してください。
-記事の内容に合った日本語のキャッチコピーやテキストを画像内に含めてください。`;
+繰り返します：画像内にテキストや文字は一切入れないでください。テキストは後から合成します。`;
 
     parts.push({ text: prompt });
 
@@ -784,12 +829,130 @@ ${section.content.substring(0, 600)}
       const refImg = getRefImages().find(r => r.id === refId);
       if (refImg?.dataUrl) {
         const base64 = refImg.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
-        parts.push({ text: "以下は「参考画像」です。このテイスト・配色・構図・雰囲気を参考にしてください：" });
+        parts.push({ text: "以下は「参考画像」です。このテイスト・配色・構図・雰囲気を参考にしてください（ただし文字やテキストは真似しないでください）：" });
         parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
       }
     }
 
     return parts;
+  }
+
+  // --- Step 3: Canvas合成（正確な日本語テキストを画像に重ねる） ---
+  function compositeImage(imgBlobUrl, copyData, canvasWidth = 1280, canvasHeight = 720) {
+    return new Promise((resolve) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext("2d");
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        // Draw background image (cover)
+        const imgRatio = img.width / img.height;
+        const canvasRatio = canvasWidth / canvasHeight;
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+        if (imgRatio > canvasRatio) { sw = img.height * canvasRatio; sx = (img.width - sw) / 2; }
+        else { sh = img.width / canvasRatio; sy = (img.height - sh) / 2; }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasWidth, canvasHeight);
+
+        // Gradient overlay for text readability
+        const pos = copyData.headlinePosition || "top";
+        if (pos === "top" || pos === "center") {
+          const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight * 0.5);
+          grad.addColorStop(0, "rgba(0,0,0,0.6)");
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvasWidth, canvasHeight * 0.5);
+        }
+        if (pos === "bottom" || pos === "center") {
+          const grad = ctx.createLinearGradient(0, canvasHeight * 0.5, 0, canvasHeight);
+          grad.addColorStop(0, "rgba(0,0,0,0)");
+          grad.addColorStop(1, "rgba(0,0,0,0.6)");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, canvasHeight * 0.5, canvasWidth, canvasHeight * 0.5);
+        }
+
+        // --- Headline ---
+        const headlineY = pos === "top" ? 0.22 : pos === "bottom" ? 0.78 : 0.45;
+        const fontSize = Math.round(canvasHeight * 0.085);
+        ctx.font = `900 ${fontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const maxW = canvasWidth * 0.85;
+        const lines = wrapText(ctx, copyData.headline, maxW);
+        const lineHeight = fontSize * 1.45;
+        const startY = headlineY * canvasHeight - ((lines.length - 1) * lineHeight) / 2;
+
+        lines.forEach((line, li) => {
+          const ly = startY + li * lineHeight;
+          const lw = ctx.measureText(line).width;
+          // Accent color band
+          const bandH = fontSize * 1.35;
+          const bandX = canvasWidth / 2 - lw / 2 - fontSize * 0.45;
+          const bandW = lw + fontSize * 0.9;
+          const bandY = ly - bandH / 2;
+          const r = bandH * 0.15;
+          ctx.fillStyle = copyData.accentColor || "#FF6B6B";
+          ctx.globalAlpha = 0.88;
+          ctx.beginPath();
+          ctx.moveTo(bandX + r, bandY);
+          ctx.lineTo(bandX + bandW - r, bandY);
+          ctx.quadraticCurveTo(bandX + bandW, bandY, bandX + bandW, bandY + r);
+          ctx.lineTo(bandX + bandW, bandY + bandH - r);
+          ctx.quadraticCurveTo(bandX + bandW, bandY + bandH, bandX + bandW - r, bandY + bandH);
+          ctx.lineTo(bandX + r, bandY + bandH);
+          ctx.quadraticCurveTo(bandX, bandY + bandH, bandX, bandY + bandH - r);
+          ctx.lineTo(bandX, bandY + r);
+          ctx.quadraticCurveTo(bandX, bandY, bandX + r, bandY);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+          // White text
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillText(line, canvasWidth / 2, ly);
+        });
+
+        // --- Subtext ---
+        if (copyData.subtext) {
+          const subY = pos === "top" ? 0.75 : pos === "bottom" ? 0.22 : 0.72;
+          const subFontSize = Math.round(canvasHeight * 0.035);
+          ctx.font = `700 ${subFontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif`;
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,0.85)";
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 2;
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillText(copyData.subtext, canvasWidth / 2, subY * canvasHeight);
+          ctx.restore();
+        }
+
+        canvas.toBlob((blob) => resolve(blob), "image/png");
+      };
+      img.onerror = () => {
+        ctx.fillStyle = "#333";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        canvas.toBlob((blob) => resolve(blob), "image/png");
+      };
+      img.src = imgBlobUrl;
+    });
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    const chars = text.split("");
+    const lines = [];
+    let currentLine = "";
+    for (const char of chars) {
+      const testLine = currentLine + char;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = char;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
   }
 
   function renderDiagrams() {
