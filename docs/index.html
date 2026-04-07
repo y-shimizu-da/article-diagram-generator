@@ -500,18 +500,13 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000);
-
     try {
       console.log("[Image] Generating with gemini-3.1-flash-image-preview (direct mode)");
       const response = await fetch(`${url}?key=${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
         body: JSON.stringify(body),
       });
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -534,8 +529,6 @@ document.addEventListener("DOMContentLoaded", () => {
         text: textPart?.text || "",
       };
     } catch (err) {
-      clearTimeout(timeoutId);
-      if (err.name === "AbortError") throw new Error("画像生成がタイムアウトしました (5分)。再度お試しください。");
       throw err;
     }
   }
@@ -840,41 +833,55 @@ ${sec.content}`;
       perItemPrompts[parseInt(ta.dataset.index)] = ta.value.trim();
     });
 
-    showLoading("画像を生成中...");
     generatedDiagrams = [];
     diagramsOutput.innerHTML = "";
+    showStep("step3"); // Show step 3 immediately so results appear as they come
+    showLoading("画像を生成中...");
 
-    try {
-      for (let i = 0; i < pendingSelected.length; i++) {
-        const { idx, imageType, refId } = pendingSelected[i];
-        const section = sections[idx];
-        const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
-        const userPrompt = perItemPrompts[i] || DEFAULT_PROMPT;
+    let completed = 0;
+    let errors = 0;
 
-        loadingText.textContent = `画像を生成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
+    for (let i = 0; i < pendingSelected.length; i++) {
+      const { idx, imageType, refId } = pendingSelected[i];
+      const section = sections[idx];
+      const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
+      const userPrompt = perItemPrompts[i] || DEFAULT_PROMPT;
 
-        // Direct to image model: user prompt + section content + ref image → finished image
+      loadingText.textContent = `画像を生成中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
+
+      try {
         const callParts = buildImageParts(section, typeInfo, refId, userPrompt);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
-        // Convert base64 to blob
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
         const blob = new Blob([byteArray], { type: result.mimeType });
 
-        generatedDiagrams.push({
+        const diagramData = {
           title: section.title,
           typeName: typeInfo.name,
           compositeBlob: blob,
           summary: result.text || section.title,
-        });
+        };
+        generatedDiagrams.push(diagramData);
+
+        // Append this result immediately
+        appendDiagramCard(diagramData, generatedDiagrams.length - 1);
+      } catch (err) {
+        errors++;
+        // Show error card for this item
+        appendErrorCard(section.title, typeInfo.name, err.message);
       }
-      renderDiagrams();
-      showStep("step3");
-    } catch (err) {
-      showError(stepsEl.step2half.querySelector(".step-content"), err.message);
-    } finally { hideLoading(); }
+      completed++;
+    }
+
+    hideLoading();
+    if (errors > 0 && errors < pendingSelected.length) {
+      showError(stepsEl.step3.querySelector(".step-content"), `${errors}件の画像生成に失敗しました。成功した画像は上に表示されています。`);
+    } else if (errors === pendingSelected.length) {
+      showError(stepsEl.step3.querySelector(".step-content"), "すべての画像生成に失敗しました。プロンプトやAPIキーを確認してください。");
+    }
   });
 
   // --- Build image generation parts (direct to image model, like creative-generator) ---
@@ -914,33 +921,40 @@ ${typeInfo.prompt}
     return parts;
   }
 
-  function renderDiagrams() {
-    diagramsOutput.innerHTML = "";
-    for (let i = 0; i < generatedDiagrams.length; i++) {
-      const d = generatedDiagrams[i];
-      const card = document.createElement("div");
-      card.className = "diagram-card";
-
-      card.innerHTML = `
-        <div class="diagram-card-header">
-          <h3>${esc(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(d.typeName)}</span></h3>
-          <div class="diagram-actions">
-            <button class="btn-sm" data-action="dl-png" data-index="${i}">PNGダウンロード</button>
-          </div>
+  function appendDiagramCard(d, index) {
+    const card = document.createElement("div");
+    card.className = "diagram-card";
+    card.innerHTML = `
+      <div class="diagram-card-header">
+        <h3>${esc(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(d.typeName)}</span></h3>
+        <div class="diagram-actions">
+          <button class="btn-sm" data-action="dl-png" data-index="${index}">PNGダウンロード</button>
         </div>
-        <div class="diagram-card-body"></div>
-        <div class="diagram-summary">${esc(d.summary)}</div>
-      `;
+      </div>
+      <div class="diagram-card-body"></div>
+      <div class="diagram-summary">${esc(d.summary)}</div>
+    `;
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(d.compositeBlob);
+    img.alt = d.title;
+    img.style.maxWidth = "100%";
+    img.style.borderRadius = "8px";
+    card.querySelector(".diagram-card-body").appendChild(img);
+    diagramsOutput.appendChild(card);
+    // Scroll to the new card
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 
-      const img = document.createElement("img");
-      img.src = URL.createObjectURL(d.compositeBlob);
-      img.alt = d.title;
-      img.style.maxWidth = "100%";
-      img.style.borderRadius = "8px";
-      card.querySelector(".diagram-card-body").appendChild(img);
-
-      diagramsOutput.appendChild(card);
-    }
+  function appendErrorCard(title, typeName, errorMsg) {
+    const card = document.createElement("div");
+    card.className = "diagram-card";
+    card.innerHTML = `
+      <div class="diagram-card-header" style="background:#fff0f0;">
+        <h3 style="color:#c33;">${esc(title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(typeName)}</span></h3>
+      </div>
+      <div class="error-msg" style="margin:12px 18px;">${esc(errorMsg)}</div>
+    `;
+    diagramsOutput.appendChild(card);
   }
 
   // --- Download ---
