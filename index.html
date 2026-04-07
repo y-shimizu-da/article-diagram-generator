@@ -293,44 +293,44 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   const IMAGE_TYPES = {
     // ===== 悩み・共感 =====
-    pain_photo: { icon: "😰", name: "悩み訴求（写真風）", desc: "暗めの背景+悩みテキスト散りばめ", category: "悩み・共感",
-      prompt: "Japanese cosmetics article LP image. Dark moody background with a close-up of a woman's face (lower half, showing skin texture). Large bold white Japanese headline text at the top expressing frustration/stress. Multiple scattered label tags in blue-gray brush-stroke style around the face, each containing a short Japanese complaint phrase. The overall mood is 'overwhelmed and stressed'. Color palette: dark gray background, white bold headlines, muted steel-blue accent labels. Photorealistic woman's skin, editorial advertising quality." },
-    pain_deny: { icon: "✕", name: "否定訴求（×マーク）", desc: "不要なものに×印+太字テキスト", category: "悩み・共感",
-      prompt: "Japanese cosmetics article LP image. Top-down flat-lay photo of multiple cosmetic products (brush, foundation tube, powder compact, concealer) arranged on a light marble/cream background. Each product has a large RED X mark overlaid on it. In the center, very large bold Japanese text reads '必要なし！' (Not needed!). The message is 'you can throw all these away'. Bright, clean photography style with bold graphic overlays. Red X marks are hand-drawn style." },
+    pain_photo: { icon: "😰", name: "悩み訴求（写真風）", desc: "暗めの背景+悩みの雰囲気", category: "悩み・共感",
+      prompt: "Dark moody photographic background. Close-up of a Japanese woman's face (lower half, showing skin texture), looking stressed and tired. Scattered blue-gray brush-stroke shaped decorative elements around the face. The overall mood is overwhelmed and stressed. Color palette: dark charcoal background, muted steel-blue decorative accents. Photorealistic skin, editorial advertising quality. Leave clear empty space at the top for text overlay. DO NOT include any text, letters, words, or characters." },
+    pain_deny: { icon: "✕", name: "否定訴求（×マーク）", desc: "不要なものに×印", category: "悩み・共感",
+      prompt: "Top-down flat-lay photo of multiple cosmetic products (brush, foundation tube, powder compact, concealer) arranged on a light marble/cream background. Each product has a large hand-drawn style RED X mark overlaid on it. Bright, clean product photography with bold graphic red X overlays. Leave clear empty space in the center for text overlay. DO NOT include any text, letters, words, or characters." },
 
     // ===== 商品訴求 =====
     product_features: { icon: "🎯", name: "機能まとめ（アイコン）", desc: "商品中央+周囲に機能アイコン", category: "商品訴求",
-      prompt: "Japanese cosmetics article LP image. Centered product shot on a soft pink-to-cream gradient background. Large bold Japanese headline at top (e.g. revolutionary product claim). Below the headline, a catchy sub-headline in coral/pink handwriting-style font. Around the product, 4-6 small circular icons each containing a simple line-art illustration of a cosmetic item (sunscreen, primer, foundation, concealer, powder) with Japanese labels underneath. The layout communicates 'all-in-one'. Elegant, premium feel with warm pink/beige/gold color palette." },
-    product_scene: { icon: "💄", name: "使用シーン", desc: "商品の使用写真+効果テキスト", category: "商品訴求",
-      prompt: "Japanese cosmetics article LP image. Close-up photo of a woman applying a cosmetic product to her cheek/face. Soft, flattering lighting on clear beautiful skin. Large bold Japanese text overlaid at the bottom as a headline describing the key benefit. Clean, editorial beauty photography style. Warm skin tones, soft focus background. The image conveys premium quality and effortless beauty. Text has a subtle shadow for readability over the photo." },
-    easy_use: { icon: "🧴", name: "簡単さアピール", desc: "簡単な動作の写真+太字メリット", category: "商品訴求",
-      prompt: "Japanese cosmetics article LP image. Photo of a woman performing a simple beauty action (like washing face with foam, applying product). She wears a headband, casual/comfortable setting with warm natural lighting. Large bold Japanese headline overlaid on the image emphasizing ease/simplicity (e.g. 'Just wash with soap — done!'). Key benefit word in extra-large coral/pink colored decorative font. White background area on one side for text. Warm, approachable, lifestyle photography feel." },
+      prompt: "Centered cosmetic product shot on a soft pink-to-cream gradient background. Around the product, 4-6 small circular icons each containing a simple line-art illustration of a cosmetic item (sunscreen, primer, foundation, concealer, powder). The layout communicates all-in-one. Elegant, premium feel with warm pink/beige/gold color palette. Leave clear empty space at the top for text overlay. DO NOT include any text, letters, words, labels, or characters." },
+    product_scene: { icon: "💄", name: "使用シーン", desc: "商品の使用写真", category: "商品訴求",
+      prompt: "Close-up photo of a Japanese woman applying a cosmetic product to her cheek/face. Soft, flattering lighting on clear beautiful skin. Clean, editorial beauty photography style. Warm skin tones, soft focus background. The image conveys premium quality and effortless beauty. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, letters, words, or characters." },
+    easy_use: { icon: "🧴", name: "簡単さアピール", desc: "簡単な動作の写真", category: "商品訴求",
+      prompt: "Photo of a Japanese woman performing a simple beauty action (washing face with foam or applying product). She wears a headband, casual/comfortable setting with warm natural lighting. Clean white/bright background area on one side. Warm, approachable, lifestyle photography feel. Leave clear empty space for text overlay. DO NOT include any text, letters, words, or characters." },
 
     // ===== 比較・証明 =====
     before_after: { icon: "🔄", name: "ビフォーアフター（イラスト）", desc: "左右分割のイラスト比較", category: "比較・証明",
-      prompt: "Japanese cosmetics article LP image. Split-screen illustration, LEFT side has dark gray background showing a worried/tired woman looking in a mirror with a plain clock above (representing just doing makeup), RIGHT side has warm pink background showing the same woman looking happy/confident in a mirror with a decorated clock and sparkles (representing makeup + skincare combined). Cute Japanese manga/illustration style with soft lines. Japanese text labels above each side. A product illustration appears on the right side. The contrast between gray(before) and pink(after) should be dramatic." },
+      prompt: "Split-screen illustration. LEFT side: dark gray background showing a worried/tired woman looking in a mirror (representing the problem). RIGHT side: warm pink background showing the same woman looking happy/confident in a mirror with sparkles (representing the solution). Cute Japanese manga/illustration style with soft lines. Dramatic contrast between gray (before) and pink (after). Leave clear empty space at top for text overlay. DO NOT include any text, letters, words, labels, or characters." },
     price_compare: { icon: "💰", name: "価格比較（左右対比）", desc: "従来コスト vs 本商品の価格比較", category: "比較・証明",
-      prompt: "Japanese cosmetics article LP image. Clean split-screen design: LEFT side (light blue background) shows a vertical list of individual cosmetic products with their prices in Japanese yen, stacked top to bottom (sunscreen ¥1,760, primer ¥2,870, foundation ¥2,290, etc.), with a large total at the bottom (e.g. ¥10,000). RIGHT side (soft pink background) shows a single product image with a much lower price in large bold font (e.g. ¥4,864). Headers in decorative frames at the top of each column. The visual clearly shows the cost savings. Clean, infographic style with product illustrations." },
-    expert_endorse: { icon: "👩‍⚕️", name: "専門家推薦", desc: "プロの推薦コメント+写真", category: "比較・証明",
-      prompt: "Japanese cosmetics article LP image. Professional endorsement layout. Top area has large bold Japanese headline text with key phrase in gold/decorative font (like '大絶賛!' meaning 'highly praised!'). Below shows a professional woman (makeup artist/dermatologist) in an elegant setting. At the bottom, a quoted testimonial in Japanese enclosed in elegant quotation marks with a light background. Soft pink accent color on borders/corners. Premium, trustworthy editorial feel. The layout builds authority and credibility." },
+      prompt: "Clean split-screen infographic design. LEFT side (light blue background) shows a vertical stack of 5-6 individual cosmetic product illustrations. RIGHT side (soft pink background) shows a single product illustration, visually prominent and appealing. A visual arrow or comparison indicator between the two sides. Clean, infographic style with product illustrations. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, numbers, prices, letters, words, or characters." },
+    expert_endorse: { icon: "👩‍⚕️", name: "専門家推薦", desc: "プロの推薦+写真", category: "比較・証明",
+      prompt: "Professional endorsement layout. A professional Japanese woman (makeup artist or dermatologist) in a white coat in an elegant clinic/studio setting. Soft pink accent color on borders/corners. Premium, trustworthy editorial feel that builds authority and credibility. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, letters, words, quotes, or characters." },
 
     // ===== ポイント・手順 =====
     points_list: { icon: "📋", name: "ポイントまとめ", desc: "番号付きポイント一覧リスト", category: "ポイント・手順",
-      prompt: "Japanese cosmetics article LP image. Vertical numbered points list on a warm beige/cream gradient background. Bold decorative Japanese headline at the top with a small product image beside it. Below, 4-6 horizontal rows, each with: a 'Point' label with number (1,2,3...) in a coral/pink oval badge on the left, and a bold Japanese benefit statement on the right with the KEY WORD in extra-large/bold font. Each row separated by thin lines. Clean, organized, easy to scan. Color palette: warm beige background, coral/brown accent, dark brown text. Product image in top-left corner." },
+      prompt: "Warm beige/cream gradient background with a small cosmetic product image in the top-left corner. Below, 4-6 horizontal rows separated by thin lines, each row having a coral/pink oval badge on the left side. Clean, organized layout that is easy to scan. Color palette: warm beige background, coral/brown accents. Leave abundant empty space in each row for text overlay. DO NOT include any text, numbers, letters, words, or characters." },
     step_flow: { icon: "👣", name: "手順フロー（イラスト）", desc: "ステップ図解+かわいいイラスト", category: "ポイント・手順",
-      prompt: "Japanese cosmetics article LP image. Horizontal 3-step process flow illustration on a clean white/light background. Each step shows: a warm orange circle containing a cute simple illustration of a person performing an action, with Japanese text description below. Steps are connected by triangular arrow indicators (▶) between them. Illustration style is friendly, simple line-art with warm colors (orange circles, soft skin tones). Each step has a clear Japanese label above. The overall feel is 'this process is easy and friendly'. Warm orange/beige color palette." },
+      prompt: "Horizontal 3-step process flow illustration on a clean white/light background. Each step shows a warm orange circle containing a cute simple illustration of a person performing a daily action. Steps are connected by triangular arrow indicators between them. Illustration style is friendly, simple line-art with warm colors (orange circles, soft skin tones). The overall feel is easy and friendly. Warm orange/beige color palette. Leave empty space below each circle for text overlay. DO NOT include any text, numbers, letters, words, labels, or characters." },
     payment_flow: { icon: "💳", name: "支払い方法説明", desc: "支払い手順のイラストフロー", category: "ポイント・手順",
-      prompt: "Japanese cosmetics article LP image. Payment method explanation infographic on cream/white background with a thin coral/brown decorative border. Large bold Japanese headline at top explaining the payment method. Below, 3 steps shown horizontally: each step has a cute illustration (delivery person, woman checking product, wallet/payment) inside a warm-toned circle, with a colored label tab above (like 受け取り, 商品確認, お支払い) and Japanese explanatory text below each. Connected by arrow indicators. Friendly illustration style, warm brown/coral/beige color palette. Reassuring and clear." },
+      prompt: "Payment/delivery process infographic illustration on cream/white background with a thin coral/brown decorative border. 3 steps shown horizontally: each step has a cute illustration (delivery person, woman checking a box, wallet/payment) inside a warm-toned circle. Connected by arrow indicators. Friendly illustration style, warm brown/coral/beige color palette. Reassuring and clear. Leave empty space above and below each illustration for text overlay. DO NOT include any text, numbers, letters, words, labels, or characters." },
 
     // ===== CTA・緊急性 =====
-    campaign_gold: { icon: "✨", name: "キャンペーン見出し", desc: "ゴールド背景+大見出し", category: "CTA・緊急性",
-      prompt: "Japanese cosmetics article LP image. Luxurious campaign announcement banner. Background is a warm golden bokeh/sparkle gradient (champagne gold to soft white light). Centered large bold Japanese text in gold/dark brown with a slight 3D emboss effect — announcing a campaign or special offer (like 'モニター募集' or 'キャンペーン'). Smaller ruby text annotation above the main text. The mood is premium, exciting, special occasion. No product or person — purely typographic with luxurious gold particle background." },
-    discount_appeal: { icon: "🏷️", name: "割引訴求（イラスト）", desc: "イラスト+割引率の大文字", category: "CTA・緊急性",
-      prompt: "Japanese cosmetics article LP image. Soft pink/cream background. Upper area has two small speech-bubble badges with short Japanese benefit phrases (like '個人情報不要！' and '1分で終わる！'). Center shows a cute simple line-art illustration of a relaxed woman using a smartphone on a bed/couch. Below the illustration, bold Japanese text building to a HUGE discount number (like '55%OFF!') in coral/red extra-large font with a decorative star. The overall feel is casual, approachable, and exciting about the deal. Warm pink/coral palette, manga-influenced illustration style." },
-    cost_per_use: { icon: "🪙", name: "コスパ訴求（1回あたり）", desc: "イラスト+インパクトのある単価表示", category: "CTA・緊急性",
-      prompt: "Japanese cosmetics article LP image. Soft pink/cream background. A cute simple line-art illustration of a happy woman making an 'OK' hand gesture, smiling brightly. Above her head, several coin illustrations (10-yen, 100-yen style Japanese coins) floating. Large bold Japanese text reading '1回あたり' (per use) at the top, and a HUGE price number below (like '約37円') in coral/salmon extra-large bold font. The mood is cheerful and 'wow, that's cheap!'. Simple line-art illustration style with warm pink/beige/coral palette." },
-    urgency_notice: { icon: "⚠️", name: "緊急性・注意喚起", desc: "警告風カード+注意テキスト", category: "CTA・緊急性",
-      prompt: "Japanese cosmetics article LP image. Clean white card with a thin dashed coral/red decorative border (rounded corners). At the top, a decorative Japanese heading in coral/red handwriting-style font saying 'ご注意ください' (Please note). Below, centered serious Japanese text warning about limited availability (e.g. 'Orders are flooding in, campaign may end without notice'). A small product image positioned to the right side of the card. The mood is polite but urgent — creating FOMO without being aggressive. White background, coral/red accent text, clean minimal layout." },
+    campaign_gold: { icon: "✨", name: "キャンペーン見出し", desc: "ゴールド背景+豪華な雰囲気", category: "CTA・緊急性",
+      prompt: "Luxurious banner background. Warm golden bokeh/sparkle gradient (champagne gold to soft white light). Scattered gold particles and light flares. The mood is premium, exciting, special occasion. No product or person — purely decorative luxurious gold particle background with abundant empty space in the center for text overlay. DO NOT include any text, letters, words, or characters." },
+    discount_appeal: { icon: "🏷️", name: "割引訴求（イラスト）", desc: "イラスト+お得感の演出", category: "CTA・緊急性",
+      prompt: "Soft pink/cream background. Center shows a cute simple line-art illustration of a relaxed woman using a smartphone on a bed/couch, looking happy. Small decorative speech-bubble shapes (empty, no text) in the upper area. A decorative star/sparkle element in the lower area. The overall feel is casual, approachable, and exciting. Warm pink/coral palette, manga-influenced illustration style. Leave abundant empty space for text overlay. DO NOT include any text, numbers, letters, words, or characters." },
+    cost_per_use: { icon: "🪙", name: "コスパ訴求（1回あたり）", desc: "イラスト+コインの演出", category: "CTA・緊急性",
+      prompt: "Soft pink/cream background. A cute simple line-art illustration of a happy woman making an OK hand gesture, smiling brightly. Above her head, several floating coin illustrations (Japanese style coins). The mood is cheerful and delighted. Simple line-art illustration style with warm pink/beige/coral palette. Leave abundant empty space at top and bottom for text overlay. DO NOT include any text, numbers, prices, letters, words, or characters." },
+    urgency_notice: { icon: "⚠️", name: "緊急性・注意喚起", desc: "警告風カード+緊急感", category: "CTA・緊急性",
+      prompt: "Clean white card with a thin dashed coral/red decorative border (rounded corners). A small cosmetic product image positioned to the right side of the card. The mood is polite but urgent. White background, coral/red decorative accents, clean minimal layout. Leave abundant empty space in the center and top for text overlay. DO NOT include any text, letters, words, headings, or characters." },
   };
 
   // --- DOM ---
@@ -820,7 +820,9 @@ ${typeInfo.prompt}
 タイトル: ${section.title}
 内容: ${section.content.substring(0, 400)}
 
-繰り返します：画像内にテキストや文字は一切入れないでください。テキストは後から合成します。`;
+繰り返します：画像内にテキストや文字は一切入れないでください。テキストは後から合成します。
+
+CRITICAL INSTRUCTION: Do NOT render any text, letters, words, numbers, Japanese characters, hiragana, katakana, kanji, or any written symbols in the image. The image must contain ZERO text of any kind. Text will be composited later by a separate system.`;
 
     parts.push({ text: prompt });
 
@@ -829,7 +831,7 @@ ${typeInfo.prompt}
       const refImg = getRefImages().find(r => r.id === refId);
       if (refImg?.dataUrl) {
         const base64 = refImg.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
-        parts.push({ text: "以下は「参考画像」です。このテイスト・配色・構図・雰囲気を参考にしてください（ただし文字やテキストは真似しないでください）：" });
+        parts.push({ text: "Reference image for style/color/composition only. Do NOT copy any text from this image. Generate ZERO text in the output:" });
         parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
       }
     }
@@ -838,6 +840,8 @@ ${typeInfo.prompt}
   }
 
   // --- Step 3: Canvas合成（正確な日本語テキストを画像に重ねる） ---
+  const FONT_STACK = '"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif';
+
   function compositeImage(imgBlobUrl, copyData, canvasWidth = 1280, canvasHeight = 720) {
     return new Promise((resolve) => {
       const canvas = document.createElement("canvas");
@@ -856,45 +860,49 @@ ${typeInfo.prompt}
         else { sh = img.width / canvasRatio; sy = (img.height - sh) / 2; }
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasWidth, canvasHeight);
 
-        // Gradient overlay for text readability
         const pos = copyData.headlinePosition || "top";
+        const accent = copyData.accentColor || "#FF6B6B";
+
+        // --- Gradient overlay for readability ---
         if (pos === "top" || pos === "center") {
-          const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight * 0.5);
-          grad.addColorStop(0, "rgba(0,0,0,0.6)");
-          grad.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, canvasWidth, canvasHeight * 0.5);
+          const g = ctx.createLinearGradient(0, 0, 0, canvasHeight * 0.55);
+          g.addColorStop(0, "rgba(0,0,0,0.55)");
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, canvasWidth, canvasHeight * 0.55);
         }
         if (pos === "bottom" || pos === "center") {
-          const grad = ctx.createLinearGradient(0, canvasHeight * 0.5, 0, canvasHeight);
-          grad.addColorStop(0, "rgba(0,0,0,0)");
-          grad.addColorStop(1, "rgba(0,0,0,0.6)");
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, canvasHeight * 0.5, canvasWidth, canvasHeight * 0.5);
+          const g = ctx.createLinearGradient(0, canvasHeight * 0.45, 0, canvasHeight);
+          g.addColorStop(0, "rgba(0,0,0,0)");
+          g.addColorStop(1, "rgba(0,0,0,0.55)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, canvasHeight * 0.45, canvasWidth, canvasHeight * 0.55);
         }
 
         // --- Headline ---
-        const headlineY = pos === "top" ? 0.22 : pos === "bottom" ? 0.78 : 0.45;
-        const fontSize = Math.round(canvasHeight * 0.085);
-        ctx.font = `900 ${fontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif`;
+        const headlineY = pos === "top" ? 0.23 : pos === "bottom" ? 0.77 : 0.45;
+        const fontSize = Math.round(canvasHeight * 0.078);
+        ctx.font = `900 ${fontSize}px ${FONT_STACK}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        const maxW = canvasWidth * 0.85;
+        const maxW = canvasWidth * 0.82;
         const lines = wrapText(ctx, copyData.headline, maxW);
-        const lineHeight = fontSize * 1.45;
-        const startY = headlineY * canvasHeight - ((lines.length - 1) * lineHeight) / 2;
+        const lineH = fontSize * 1.5;
+        const startY = headlineY * canvasHeight - ((lines.length - 1) * lineH) / 2;
 
         lines.forEach((line, li) => {
-          const ly = startY + li * lineHeight;
+          const ly = startY + li * lineH;
           const lw = ctx.measureText(line).width;
-          // Accent color band
-          const bandH = fontSize * 1.35;
-          const bandX = canvasWidth / 2 - lw / 2 - fontSize * 0.45;
-          const bandW = lw + fontSize * 0.9;
+
+          // Accent band behind text
+          const bandH = fontSize * 1.4;
+          const bandPad = fontSize * 0.5;
+          const bandX = canvasWidth / 2 - lw / 2 - bandPad;
+          const bandW = lw + bandPad * 2;
           const bandY = ly - bandH / 2;
-          const r = bandH * 0.15;
-          ctx.fillStyle = copyData.accentColor || "#FF6B6B";
-          ctx.globalAlpha = 0.88;
+          const r = 6;
+          ctx.fillStyle = accent;
+          ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.moveTo(bandX + r, bandY);
           ctx.lineTo(bandX + bandW - r, bandY);
@@ -907,24 +915,47 @@ ${typeInfo.prompt}
           ctx.quadraticCurveTo(bandX, bandY, bandX + r, bandY);
           ctx.fill();
           ctx.globalAlpha = 1.0;
-          // White text
+
+          // Text with subtle shadow
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,0.4)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 2;
           ctx.fillStyle = "#FFFFFF";
           ctx.fillText(line, canvasWidth / 2, ly);
+          ctx.restore();
         });
 
         // --- Subtext ---
         if (copyData.subtext) {
-          const subY = pos === "top" ? 0.75 : pos === "bottom" ? 0.22 : 0.72;
-          const subFontSize = Math.round(canvasHeight * 0.035);
-          ctx.font = `700 ${subFontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif`;
-          ctx.save();
-          ctx.shadowColor = "rgba(0,0,0,0.85)";
-          ctx.shadowBlur = 10;
-          ctx.shadowOffsetX = 1;
-          ctx.shadowOffsetY = 2;
+          const subY = pos === "top" ? 0.72 : pos === "bottom" ? 0.23 : 0.70;
+          const subFS = Math.round(canvasHeight * 0.032);
+          ctx.font = `700 ${subFS}px ${FONT_STACK}`;
+
+          // Semi-transparent pill background
+          const tw = ctx.measureText(copyData.subtext).width;
+          const pillH = subFS * 2;
+          const pillW = tw + subFS * 2;
+          const pillX = canvasWidth / 2 - pillW / 2;
+          const pillY = subY * canvasHeight - pillH / 2;
+          const pr = pillH / 2;
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.beginPath();
+          ctx.moveTo(pillX + pr, pillY);
+          ctx.lineTo(pillX + pillW - pr, pillY);
+          ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pr);
+          ctx.lineTo(pillX + pillW, pillY + pillH - pr);
+          ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pr, pillY + pillH);
+          ctx.lineTo(pillX + pr, pillY + pillH);
+          ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pr);
+          ctx.lineTo(pillX, pillY + pr);
+          ctx.quadraticCurveTo(pillX, pillY, pillX + pr, pillY);
+          ctx.fill();
+
           ctx.fillStyle = "#FFFFFF";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
           ctx.fillText(copyData.subtext, canvasWidth / 2, subY * canvasHeight);
-          ctx.restore();
         }
 
         canvas.toBlob((blob) => resolve(blob), "image/png");
