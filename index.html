@@ -264,6 +264,26 @@
       </div>
     </section>
 
+    <!-- Step 2.5: Prompt editing -->
+    <section id="step2half" class="step">
+      <div class="step-header">
+        <span class="step-number">2.5</span>
+        <h2>プロンプトを確認・編集</h2>
+      </div>
+      <div class="step-content">
+        <p class="hint-text">
+          画像生成に使用するプロンプトです。必要に応じて編集してください。<br>
+          選択した参考画像とコピー（文脈テキスト）は自動で付与されます。
+        </p>
+        <textarea id="imagePromptText" style="min-height:180px;"></textarea>
+        <div id="selectedSummary" style="margin-top:12px; font-size:0.85rem; color:#666;"></div>
+        <div class="actions" style="margin-top:16px;">
+          <button id="backToSectionsBtn" class="btn secondary">セクション選択に戻る</button>
+          <button id="executeGenerateBtn" class="btn primary">この内容で画像を生成</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Step 3 -->
     <section id="step3" class="step">
       <div class="step-header">
@@ -351,11 +371,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const stepsEl = {
     step1: document.getElementById("step1"),
     step2: document.getElementById("step2"),
+    step2half: document.getElementById("step2half"),
     step3: document.getElementById("step3"),
   };
 
+  const imagePromptText = document.getElementById("imagePromptText");
+  const selectedSummary = document.getElementById("selectedSummary");
+  const backToSectionsBtn = document.getElementById("backToSectionsBtn");
+  const executeGenerateBtn = document.getElementById("executeGenerateBtn");
+
   let sections = [];
   let generatedDiagrams = [];
+  let pendingSelected = []; // selected items waiting for generation
+
+  const DEFAULT_PROMPT = `#役割
+あなたは広告マーケを担当するプロのライターです。
+選択した参考画像のレイアウトやトンマナを参考にしながら、
+選択したコピーの内容を補足する画像を生成してください。
+
+#前提条件
+この画像は記事広告の本文内に挿入する画像です。
+読み手の理解促進を促すための挿絵としての役割を果たすような画像にしてください。`;
+
+  // Restore saved prompt or use default
+  imagePromptText.value = localStorage.getItem("article_diagram_prompt") || DEFAULT_PROMPT;
+  imagePromptText.addEventListener("input", () => {
+    localStorage.setItem("article_diagram_prompt", imagePromptText.value);
+  });
 
   // --- Load reference images from admin page's localStorage ---
   function getRefImages() {
@@ -696,44 +738,66 @@ ${sec.content}`;
   }
 
   // ============================
-  // Generate Images (Hybrid: text model → copy, image model → visual, Canvas → composite)
+  // Generate Images (Hybrid with prompt editing step)
   // ============================
-  generateBtn.addEventListener("click", async () => {
+
+  // Step 2 → Step 2.5: Show prompt editing
+  generateBtn.addEventListener("click", () => {
     const cards = sectionsList.querySelectorAll(".section-card");
-    const selected = [];
-    cards.forEach((card, cardIdx) => {
+    pendingSelected = [];
+    cards.forEach((card) => {
       const cb = card.querySelector("input[type=checkbox]");
       if (!cb.checked) return;
       const idx = parseInt(cb.dataset.index);
       const typeRadio = card.querySelector("input[type=radio]:checked");
       const selectedRef = card.querySelector(".ref-thumb.selected");
       let refId = selectedRef ? selectedRef.dataset.refId : null;
-      selected.push({ idx, imageType: typeRadio ? typeRadio.value : "pain_photo", refId });
+      pendingSelected.push({ idx, imageType: typeRadio ? typeRadio.value : "pain_photo", refId });
     });
-    if (selected.length === 0) return;
+    if (pendingSelected.length === 0) return;
+
+    // Show summary of what will be generated
+    let summaryHTML = `<strong>${pendingSelected.length}件</strong> の画像を生成します：<br>`;
+    pendingSelected.forEach((s, i) => {
+      const sec = sections[s.idx];
+      const typeInfo = IMAGE_TYPES[s.imageType] || {};
+      const refLabel = s.refId ? " (参考画像あり)" : "";
+      summaryHTML += `${i + 1}. <strong>${esc(sec.title)}</strong> — ${esc(typeInfo.name || "")}${refLabel}<br>`;
+    });
+    selectedSummary.innerHTML = summaryHTML;
+
+    showStep("step2half");
+  });
+
+  backToSectionsBtn.addEventListener("click", () => showStep("step2"));
+
+  // Step 2.5 → Step 3: Execute generation
+  executeGenerateBtn.addEventListener("click", async () => {
+    if (pendingSelected.length === 0) return;
+    const userPrompt = imagePromptText.value.trim();
 
     showLoading("画像を生成中...");
     generatedDiagrams = [];
     diagramsOutput.innerHTML = "";
 
     try {
-      for (let i = 0; i < selected.length; i++) {
-        const { idx, imageType, refId } = selected[i];
+      for (let i = 0; i < pendingSelected.length; i++) {
+        const { idx, imageType, refId } = pendingSelected[i];
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
 
-        // === STEP 1: テキストモデルでコピー生成 ===
-        loadingText.textContent = `コピー生成中... (${i + 1}/${selected.length}) ${section.title}`;
+        // === テキストモデルでコピー生成 ===
+        loadingText.textContent = `コピー生成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
         const copyData = await generateCopy(section, typeInfo);
-        console.log("[Step1] copy:", copyData);
+        console.log("[Copy]", copyData);
 
-        // === STEP 2: 画像モデルでビジュアル生成（テキストなし） ===
-        loadingText.textContent = `画像を生成中... (${i + 1}/${selected.length}) ${section.title}`;
-        const callParts = buildImageParts(section, typeInfo, refId, copyData);
+        // === 画像モデルでビジュアル生成（テキストなし） ===
+        loadingText.textContent = `画像を生成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
+        const callParts = buildImageParts(section, typeInfo, refId, copyData, userPrompt);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
-        // === STEP 3: Canvas合成（正確な日本語テキストを重ねる） ===
-        loadingText.textContent = `テキスト合成中... (${i + 1}/${selected.length}) ${section.title}`;
+        // === Canvas合成（正確な日本語テキストを重ねる） ===
+        loadingText.textContent = `テキスト合成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
@@ -752,7 +816,7 @@ ${sec.content}`;
       renderDiagrams();
       showStep("step3");
     } catch (err) {
-      showError(stepsEl.step2.querySelector(".step-content"), err.message);
+      showError(stepsEl.step2half.querySelector(".step-content"), err.message);
     } finally { hideLoading(); }
   });
 
@@ -792,23 +856,16 @@ ${typeInfo.name}（${typeInfo.desc}）
     }
   }
 
-  // --- Step 2: 画像モデルでビジュアル生成（テキストなし） ---
-  function buildImageParts(section, typeInfo, refId, copyData) {
+  // --- 画像モデルでビジュアル生成（ユーザープロンプト + テキストなし指示） ---
+  function buildImageParts(section, typeInfo, refId, copyData, userPrompt) {
     const parts = [];
 
-    const prompt = `あなたは広告クリエイティブデザイナーです。以下のルールを守って広告画像を生成してください。
+    const prompt = `${userPrompt}
 
-【最重要ルール】
-★ 画像内にテキスト・文字・数字・記号を一切含めないでください ★
-★ テキストは後から正確に合成するため、画像には絶対に文字を入れないでください ★
-
-【ルール】
-1. そのまま記事LPに挿入できるビジュアル素材を出力してください。
-2. テキストを後から重ねるため、以下の位置にテキスト用の余白・暗めのエリアを確保してください：
-   - ${copyData.headlinePosition === "top" ? "画像上部" : copyData.headlinePosition === "bottom" ? "画像下部" : "画像中央"}にメインテキスト用のスペース
-   ${copyData.subtext ? "- " + (copyData.headlinePosition === "top" ? "画像下部" : "画像上部") + "にサブテキスト用のスペース" : ""}
-3. 「Design A」「パターン1」などのラベルは入れないでください。
-4. 画像サイズは1280×720pxの構図で作成してください。
+【選択したコピー（文脈テキスト）】
+タイトル: ${section.title}
+内容:
+${section.content.substring(0, 600)}
 
 【画像タイプ】
 ${typeInfo.name}（${typeInfo.desc}）
@@ -816,13 +873,14 @@ ${typeInfo.name}（${typeInfo.desc}）
 【デザインの方向性】
 ${typeInfo.prompt}
 
-【記事の内容（画像の雰囲気の参考用）】
-タイトル: ${section.title}
-内容: ${section.content.substring(0, 400)}
+【テキスト合成について】
+テキストは後から正確に合成するため、以下を守ってください：
+- 画像内にテキスト・文字・数字・記号を一切含めないでください
+- ${copyData.headlinePosition === "top" ? "画像上部" : copyData.headlinePosition === "bottom" ? "画像下部" : "画像中央"}にメインテキスト用の余白を確保してください
+${copyData.subtext ? "- " + (copyData.headlinePosition === "top" ? "画像下部" : "画像上部") + "にサブテキスト用の余白を確保してください" : ""}
+- 画像サイズは1280×720pxの構図で作成してください
 
-繰り返します：画像内にテキストや文字は一切入れないでください。テキストは後から合成します。
-
-CRITICAL INSTRUCTION: Do NOT render any text, letters, words, numbers, Japanese characters, hiragana, katakana, kanji, or any written symbols in the image. The image must contain ZERO text of any kind. Text will be composited later by a separate system.`;
+IMPORTANT: Do NOT render any text, letters, words, numbers, or characters in the image. The image must contain ZERO text. Text will be composited later.`;
 
     parts.push({ text: prompt });
 
