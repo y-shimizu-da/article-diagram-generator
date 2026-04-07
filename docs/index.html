@@ -208,6 +208,47 @@
     }
     .hint-text { font-size: 0.82rem; color: #888; margin-bottom: 16px; line-height: 1.6; }
 
+    /* Prompt cards */
+    .prompt-card {
+      border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 14px;
+      overflow: hidden; background: #fff;
+    }
+    .prompt-card-header {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      background: #f8f9fa; border-bottom: 1px solid #eee; flex-wrap: wrap;
+    }
+    .prompt-card-header .pc-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; background: #4361ee; color: #fff;
+      border-radius: 50%; font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
+    }
+    .prompt-card-header .pc-title { font-weight: 600; font-size: 0.92rem; flex: 1; min-width: 0; }
+    .prompt-card-header .pc-type {
+      font-size: 0.72rem; background: #eef1ff; color: #4361ee;
+      padding: 2px 10px; border-radius: 12px; font-weight: 600; white-space: nowrap;
+    }
+    .prompt-card-header .pc-ref {
+      font-size: 0.72rem; background: #fef3e0; color: #e65100;
+      padding: 2px 10px; border-radius: 12px; font-weight: 600; white-space: nowrap;
+    }
+    .prompt-card-body { padding: 12px 16px; }
+    .prompt-card-body .pc-copy {
+      font-size: 0.8rem; color: #666; line-height: 1.5; margin-bottom: 8px;
+      max-height: 60px; overflow: hidden;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    }
+    .prompt-card-body textarea {
+      width: 100%; min-height: 120px; padding: 10px; border: 1px solid #ddd;
+      border-radius: 6px; font-size: 0.88rem; line-height: 1.6; resize: vertical;
+      font-family: inherit;
+    }
+    .prompt-card-body textarea:focus { outline: none; border-color: #4361ee; }
+    .prompt-card-ref-preview { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .prompt-card-ref-preview img {
+      width: 80px; height: 54px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;
+    }
+    .prompt-card-ref-preview span { font-size: 0.78rem; color: #888; }
+
     @media (max-width: 600px) {
       .container { padding: 12px 8px 40px; }
       header h1 { font-size: 1.4rem; }
@@ -264,19 +305,18 @@
       </div>
     </section>
 
-    <!-- Step 2.5: Prompt editing -->
+    <!-- Step 2.5: Per-item prompt editing -->
     <section id="step2half" class="step">
       <div class="step-header">
         <span class="step-number">2.5</span>
-        <h2>プロンプトを確認・編集</h2>
+        <h2>画像ごとのプロンプトを確認・編集</h2>
       </div>
       <div class="step-content">
         <p class="hint-text">
-          画像生成に使用するプロンプトです。必要に応じて編集してください。<br>
-          選択した参考画像とコピー（文脈テキスト）は自動で付与されます。
+          各画像の生成プロンプトを個別に編集できます。<br>
+          コピー（文脈テキスト）・参考画像は自動で付与されます。
         </p>
-        <textarea id="imagePromptText" style="min-height:180px;"></textarea>
-        <div id="selectedSummary" style="margin-top:12px; font-size:0.85rem; color:#666;"></div>
+        <div id="promptCards"></div>
         <div class="actions" style="margin-top:16px;">
           <button id="backToSectionsBtn" class="btn secondary">セクション選択に戻る</button>
           <button id="executeGenerateBtn" class="btn primary">この内容で画像を生成</button>
@@ -375,8 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
     step3: document.getElementById("step3"),
   };
 
-  const imagePromptText = document.getElementById("imagePromptText");
-  const selectedSummary = document.getElementById("selectedSummary");
+  const promptCards = document.getElementById("promptCards");
   const backToSectionsBtn = document.getElementById("backToSectionsBtn");
   const executeGenerateBtn = document.getElementById("executeGenerateBtn");
 
@@ -392,12 +431,6 @@ document.addEventListener("DOMContentLoaded", () => {
 #前提条件
 この画像は記事広告の本文内に挿入する画像です。
 読み手の理解促進を促すための挿絵としての役割を果たすような画像にしてください。`;
-
-  // Restore saved prompt or use default
-  imagePromptText.value = localStorage.getItem("article_diagram_prompt") || DEFAULT_PROMPT;
-  imagePromptText.addEventListener("input", () => {
-    localStorage.setItem("article_diagram_prompt", imagePromptText.value);
-  });
 
   // --- Load reference images from admin page's localStorage ---
   function getRefImages() {
@@ -741,7 +774,7 @@ ${sec.content}`;
   // Generate Images (Hybrid with prompt editing step)
   // ============================
 
-  // Step 2 → Step 2.5: Show prompt editing
+  // Step 2 → Step 2.5: Build per-item prompt cards
   generateBtn.addEventListener("click", () => {
     const cards = sectionsList.querySelectorAll(".section-card");
     pendingSelected = [];
@@ -756,25 +789,56 @@ ${sec.content}`;
     });
     if (pendingSelected.length === 0) return;
 
-    // Show summary of what will be generated
-    let summaryHTML = `<strong>${pendingSelected.length}件</strong> の画像を生成します：<br>`;
+    // Build individual prompt cards
+    promptCards.innerHTML = "";
     pendingSelected.forEach((s, i) => {
       const sec = sections[s.idx];
       const typeInfo = IMAGE_TYPES[s.imageType] || {};
-      const refLabel = s.refId ? " (参考画像あり)" : "";
-      summaryHTML += `${i + 1}. <strong>${esc(sec.title)}</strong> — ${esc(typeInfo.name || "")}${refLabel}<br>`;
+      const refImg = s.refId ? getRefImages().find(r => r.id === s.refId) : null;
+
+      const card = document.createElement("div");
+      card.className = "prompt-card";
+      card.dataset.pendingIndex = i;
+
+      let refPreviewHTML = "";
+      if (refImg?.dataUrl) {
+        const refTypeName = IMAGE_TYPES[refImg.subtype]?.name || refImg.subtype;
+        refPreviewHTML = `<div class="prompt-card-ref-preview">
+          <img src="${refImg.dataUrl}" alt="ref">
+          <span>参考画像: ${esc(refTypeName)}</span>
+        </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="prompt-card-header">
+          <span class="pc-num">${i + 1}</span>
+          <span class="pc-title">${esc(sec.title)}</span>
+          <span class="pc-type">${esc(typeInfo.name || "")}</span>
+          ${refImg ? '<span class="pc-ref">参考画像あり</span>' : ""}
+        </div>
+        <div class="prompt-card-body">
+          <div class="pc-copy">${esc(sec.content)}</div>
+          ${refPreviewHTML}
+          <textarea class="pc-prompt" data-index="${i}">${esc(DEFAULT_PROMPT)}</textarea>
+        </div>
+      `;
+      promptCards.appendChild(card);
     });
-    selectedSummary.innerHTML = summaryHTML;
 
     showStep("step2half");
   });
 
   backToSectionsBtn.addEventListener("click", () => showStep("step2"));
 
-  // Step 2.5 → Step 3: Execute generation
+  // Step 2.5 → Step 3: Execute generation (direct to image model, like creative-generator)
   executeGenerateBtn.addEventListener("click", async () => {
     if (pendingSelected.length === 0) return;
-    const userPrompt = imagePromptText.value.trim();
+
+    // Collect per-item prompts
+    const perItemPrompts = [];
+    promptCards.querySelectorAll(".pc-prompt").forEach(ta => {
+      perItemPrompts[parseInt(ta.dataset.index)] = ta.value.trim();
+    });
 
     showLoading("画像を生成中...");
     generatedDiagrams = [];
@@ -785,32 +849,25 @@ ${sec.content}`;
         const { idx, imageType, refId } = pendingSelected[i];
         const section = sections[idx];
         const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
+        const userPrompt = perItemPrompts[i] || DEFAULT_PROMPT;
 
-        // === テキストモデルでコピー生成 ===
-        loadingText.textContent = `コピー生成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
-        const copyData = await generateCopy(section, typeInfo);
-        console.log("[Copy]", copyData);
-
-        // === 画像モデルでビジュアル生成（テキストなし） ===
         loadingText.textContent = `画像を生成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
-        const callParts = buildImageParts(section, typeInfo, refId, copyData, userPrompt);
+
+        // Direct to image model: user prompt + section content + ref image → finished image
+        const callParts = buildImageParts(section, typeInfo, refId, userPrompt);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
-        // === Canvas合成（正確な日本語テキストを重ねる） ===
-        loadingText.textContent = `テキスト合成中... (${i + 1}/${pendingSelected.length}) ${section.title}`;
+        // Convert base64 to blob
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
         for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
-        const bgBlob = new Blob([byteArray], { type: result.mimeType });
-        const bgUrl = URL.createObjectURL(bgBlob);
-        const compositeBlob = await compositeImage(bgUrl, copyData);
-        URL.revokeObjectURL(bgUrl);
+        const blob = new Blob([byteArray], { type: result.mimeType });
 
         generatedDiagrams.push({
           title: section.title,
           typeName: typeInfo.name,
-          compositeBlob,
-          summary: `${copyData.headline}${copyData.subtext ? " — " + copyData.subtext : ""}`,
+          compositeBlob: blob,
+          summary: result.text || section.title,
         });
       }
       renderDiagrams();
@@ -820,44 +877,8 @@ ${sec.content}`;
     } finally { hideLoading(); }
   });
 
-  // --- Step 1: テキストモデルでキャッチコピー生成 ---
-  async function generateCopy(section, typeInfo) {
-    const prompt = `あなたは通販LPのコピーライターです。以下の記事セクションに対して、広告画像に重ねるテキストを考えてください。
-
-【記事セクション】
-タイトル: ${section.title}
-内容: ${section.content.substring(0, 500)}
-
-【画像タイプ】
-${typeInfo.name}（${typeInfo.desc}）
-
-【出力ルール】
-- headline: メインのキャッチコピー（15文字以内、インパクト重視）
-- subtext: 補足テキスト（25文字以内、なければ空文字）
-- accentColor: テキスト背景の帯色（#RRGGBB形式、画像タイプの雰囲気に合う色）
-- headlinePosition: ヘッドラインの位置（"top", "center", "bottom" のいずれか）
-- JSONのみ返してください
-
-{"headline": "キャッチコピー", "subtext": "補足テキスト", "accentColor": "#FF6B6B", "headlinePosition": "top"}`;
-
-    try {
-      const result = await callGeminiText(prompt, 1024);
-      const cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        headline: parsed.headline || section.title,
-        subtext: parsed.subtext || "",
-        accentColor: parsed.accentColor || "#FF6B6B",
-        headlinePosition: parsed.headlinePosition || "top",
-      };
-    } catch {
-      return { headline: section.title, subtext: "", accentColor: "#FF6B6B", headlinePosition: "top" };
-    }
-  }
-
-  // --- 画像モデルでビジュアル生成（ユーザープロンプト + テキストなし指示） ---
-  function buildImageParts(section, typeInfo, refId, copyData, userPrompt) {
+  // --- Build image generation parts (direct to image model, like creative-generator) ---
+  function buildImageParts(section, typeInfo, refId, userPrompt) {
     const parts = [];
 
     const prompt = `${userPrompt}
@@ -873,14 +894,10 @@ ${typeInfo.name}（${typeInfo.desc}）
 【デザインの方向性】
 ${typeInfo.prompt}
 
-【テキスト合成について】
-テキストは後から正確に合成するため、以下を守ってください：
-- 画像内にテキスト・文字・数字・記号を一切含めないでください
-- ${copyData.headlinePosition === "top" ? "画像上部" : copyData.headlinePosition === "bottom" ? "画像下部" : "画像中央"}にメインテキスト用の余白を確保してください
-${copyData.subtext ? "- " + (copyData.headlinePosition === "top" ? "画像下部" : "画像上部") + "にサブテキスト用の余白を確保してください" : ""}
+【出力ルール】
 - 画像サイズは1280×720pxの構図で作成してください
-
-IMPORTANT: Do NOT render any text, letters, words, numbers, or characters in the image. The image must contain ZERO text. Text will be composited later.`;
+- テキストは読みやすいフォントで出力してください
+- 1つの完成されたクリエイティブとして出力してください`;
 
     parts.push({ text: prompt });
 
@@ -889,159 +906,12 @@ IMPORTANT: Do NOT render any text, letters, words, numbers, or characters in the
       const refImg = getRefImages().find(r => r.id === refId);
       if (refImg?.dataUrl) {
         const base64 = refImg.dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
-        parts.push({ text: "Reference image for style/color/composition only. Do NOT copy any text from this image. Generate ZERO text in the output:" });
+        parts.push({ text: "以下は「参考画像」です。このテイスト・配色・構図・雰囲気を参考にしてください：" });
         parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
       }
     }
 
     return parts;
-  }
-
-  // --- Step 3: Canvas合成（正確な日本語テキストを画像に重ねる） ---
-  const FONT_STACK = '"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif';
-
-  function compositeImage(imgBlobUrl, copyData, canvasWidth = 1280, canvasHeight = 720) {
-    return new Promise((resolve) => {
-      const canvas = document.createElement("canvas");
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      const ctx = canvas.getContext("2d");
-
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        // Draw background image (cover)
-        const imgRatio = img.width / img.height;
-        const canvasRatio = canvasWidth / canvasHeight;
-        let sx = 0, sy = 0, sw = img.width, sh = img.height;
-        if (imgRatio > canvasRatio) { sw = img.height * canvasRatio; sx = (img.width - sw) / 2; }
-        else { sh = img.width / canvasRatio; sy = (img.height - sh) / 2; }
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvasWidth, canvasHeight);
-
-        const pos = copyData.headlinePosition || "top";
-        const accent = copyData.accentColor || "#FF6B6B";
-
-        // --- Gradient overlay for readability ---
-        if (pos === "top" || pos === "center") {
-          const g = ctx.createLinearGradient(0, 0, 0, canvasHeight * 0.55);
-          g.addColorStop(0, "rgba(0,0,0,0.55)");
-          g.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = g;
-          ctx.fillRect(0, 0, canvasWidth, canvasHeight * 0.55);
-        }
-        if (pos === "bottom" || pos === "center") {
-          const g = ctx.createLinearGradient(0, canvasHeight * 0.45, 0, canvasHeight);
-          g.addColorStop(0, "rgba(0,0,0,0)");
-          g.addColorStop(1, "rgba(0,0,0,0.55)");
-          ctx.fillStyle = g;
-          ctx.fillRect(0, canvasHeight * 0.45, canvasWidth, canvasHeight * 0.55);
-        }
-
-        // --- Headline ---
-        const headlineY = pos === "top" ? 0.23 : pos === "bottom" ? 0.77 : 0.45;
-        const fontSize = Math.round(canvasHeight * 0.078);
-        ctx.font = `900 ${fontSize}px ${FONT_STACK}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        const maxW = canvasWidth * 0.82;
-        const lines = wrapText(ctx, copyData.headline, maxW);
-        const lineH = fontSize * 1.5;
-        const startY = headlineY * canvasHeight - ((lines.length - 1) * lineH) / 2;
-
-        lines.forEach((line, li) => {
-          const ly = startY + li * lineH;
-          const lw = ctx.measureText(line).width;
-
-          // Accent band behind text
-          const bandH = fontSize * 1.4;
-          const bandPad = fontSize * 0.5;
-          const bandX = canvasWidth / 2 - lw / 2 - bandPad;
-          const bandW = lw + bandPad * 2;
-          const bandY = ly - bandH / 2;
-          const r = 6;
-          ctx.fillStyle = accent;
-          ctx.globalAlpha = 0.9;
-          ctx.beginPath();
-          ctx.moveTo(bandX + r, bandY);
-          ctx.lineTo(bandX + bandW - r, bandY);
-          ctx.quadraticCurveTo(bandX + bandW, bandY, bandX + bandW, bandY + r);
-          ctx.lineTo(bandX + bandW, bandY + bandH - r);
-          ctx.quadraticCurveTo(bandX + bandW, bandY + bandH, bandX + bandW - r, bandY + bandH);
-          ctx.lineTo(bandX + r, bandY + bandH);
-          ctx.quadraticCurveTo(bandX, bandY + bandH, bandX, bandY + bandH - r);
-          ctx.lineTo(bandX, bandY + r);
-          ctx.quadraticCurveTo(bandX, bandY, bandX + r, bandY);
-          ctx.fill();
-          ctx.globalAlpha = 1.0;
-
-          // Text with subtle shadow
-          ctx.save();
-          ctx.shadowColor = "rgba(0,0,0,0.4)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetY = 2;
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillText(line, canvasWidth / 2, ly);
-          ctx.restore();
-        });
-
-        // --- Subtext ---
-        if (copyData.subtext) {
-          const subY = pos === "top" ? 0.72 : pos === "bottom" ? 0.23 : 0.70;
-          const subFS = Math.round(canvasHeight * 0.032);
-          ctx.font = `700 ${subFS}px ${FONT_STACK}`;
-
-          // Semi-transparent pill background
-          const tw = ctx.measureText(copyData.subtext).width;
-          const pillH = subFS * 2;
-          const pillW = tw + subFS * 2;
-          const pillX = canvasWidth / 2 - pillW / 2;
-          const pillY = subY * canvasHeight - pillH / 2;
-          const pr = pillH / 2;
-          ctx.fillStyle = "rgba(0,0,0,0.5)";
-          ctx.beginPath();
-          ctx.moveTo(pillX + pr, pillY);
-          ctx.lineTo(pillX + pillW - pr, pillY);
-          ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pr);
-          ctx.lineTo(pillX + pillW, pillY + pillH - pr);
-          ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pr, pillY + pillH);
-          ctx.lineTo(pillX + pr, pillY + pillH);
-          ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pr);
-          ctx.lineTo(pillX, pillY + pr);
-          ctx.quadraticCurveTo(pillX, pillY, pillX + pr, pillY);
-          ctx.fill();
-
-          ctx.fillStyle = "#FFFFFF";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(copyData.subtext, canvasWidth / 2, subY * canvasHeight);
-        }
-
-        canvas.toBlob((blob) => resolve(blob), "image/png");
-      };
-      img.onerror = () => {
-        ctx.fillStyle = "#333";
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        canvas.toBlob((blob) => resolve(blob), "image/png");
-      };
-      img.src = imgBlobUrl;
-    });
-  }
-
-  function wrapText(ctx, text, maxWidth) {
-    const chars = text.split("");
-    const lines = [];
-    let currentLine = "";
-    for (const char of chars) {
-      const testLine = currentLine + char;
-      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = char;
-      } else {
-        currentLine = testLine;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
   }
 
   function renderDiagrams() {
