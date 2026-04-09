@@ -894,20 +894,22 @@ ${sec.content}`;
     }
   });
 
-  // --- 案B: 参考画像のスタイルをテキスト分析 ---
+  // --- 案B: 参考画像のスタイルをテキスト分析（リトライ付き） ---
   async function analyzeRefStyle(dataUrl) {
     const base64 = dataUrl.replace(/^data:image\/[^;]+;base64,/, "");
     const apiKey = getApiKey();
     if (!apiKey) return "";
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { text: `この広告画像のデザインスタイルだけを分析してください。
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [
+                { text: `この広告画像のデザインスタイルだけを分析してください。
 
 以下の項目を簡潔に記述してください：
 - 背景: （色、グラデーション、テクスチャ）
@@ -919,18 +921,37 @@ ${sec.content}`;
 
 ※被写体や商品の種類は無視してください。レイアウトと配色とトーンだけ分析してください。
 ※JSON等ではなく、箇条書きのテキストで返してください。` },
-            { inlineData: { mimeType: "image/jpeg", data: base64 } },
-          ] }],
-          generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 512 } },
-        }),
+                { inlineData: { mimeType: "image/jpeg", data: base64 } },
+              ] }],
+              generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 512 } },
+            }),
+          }
+        );
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          const msg = err.error?.message || `${response.status}`;
+          const isRetryable = msg.includes("429") || msg.includes("overloaded") || msg.includes("high demand") || msg.includes("503");
+          if (attempt < 3 && isRetryable) {
+            console.log(`[StyleAnalysis] Retry ${attempt + 1}/3...`);
+            await new Promise(r => setTimeout(r, 3000 * Math.pow(2, attempt) + Math.random() * 2000));
+            continue;
+          }
+          return "";
+        }
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        if (!candidate?.content?.parts) return "";
+        const textParts = candidate.content.parts.filter(p => !p.thought && p.text);
+        return textParts.map(p => p.text).join("\n");
+      } catch (err) {
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 3000 * Math.pow(2, attempt) + Math.random() * 2000));
+          continue;
+        }
+        return "";
       }
-    );
-    if (!response.ok) return "";
-    const data = await response.json();
-    const candidate = data.candidates?.[0];
-    if (!candidate?.content?.parts) return "";
-    const textParts = candidate.content.parts.filter(p => !p.thought && p.text);
-    return textParts.map(p => p.text).join("\n");
+    }
+    return "";
   }
 
   // --- Build image generation parts (案B: スタイル記述で渡す + 案A: 内容優先を明示) ---
