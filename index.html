@@ -352,45 +352,31 @@ document.addEventListener("DOMContentLoaded", () => {
   // Image type definitions for article LP
   // ============================================================
   const IMAGE_TYPES = {
-    // ===== 悩み・共感 =====
-    pain_photo: { icon: "😰", name: "悩み訴求（写真風）", desc: "暗めの背景+悩みの雰囲気", category: "悩み・共感",
-      prompt: "Dark moody photographic background. Close-up of a Japanese woman's face (lower half, showing skin texture), looking stressed and tired. Scattered blue-gray brush-stroke shaped decorative elements around the face. The overall mood is overwhelmed and stressed. Color palette: dark charcoal background, muted steel-blue decorative accents. Photorealistic skin, editorial advertising quality. Leave clear empty space at the top for text overlay. DO NOT include any text, letters, words, or characters." },
-    pain_deny: { icon: "✕", name: "否定訴求（×マーク）", desc: "不要なものに×印", category: "悩み・共感",
-      prompt: "Top-down flat-lay photo of multiple cosmetic products (brush, foundation tube, powder compact, concealer) arranged on a light marble/cream background. Each product has a large hand-drawn style RED X mark overlaid on it. Bright, clean product photography with bold graphic red X overlays. Leave clear empty space in the center for text overlay. DO NOT include any text, letters, words, or characters." },
+    // ===== 強調・共感 =====
+    empathy_scene: { icon: "😰", name: "共感シーン", desc: "読者の悩みに寄り添うシーン", category: "強調・共感",
+      prompt: "記事の内容が描写する悩みや困りごとを、1つのシーンとしてビジュアル化してください。読者が「自分のことだ」と感じるような、日常的でリアルな場面を描いてください。イラストまたは写真風どちらでもOK。" },
+    highlight: { icon: "⚡", name: "キーメッセージ強調", desc: "重要な主張を視覚的にインパクト", category: "強調・共感",
+      prompt: "記事の中で最も伝えたいメッセージを、視覚的にインパクトのある1枚の画像で表現してください。大きな文字と印象的なビジュアルで、読者の目を止める挿絵にしてください。" },
+    emotion: { icon: "😊", name: "感情表現", desc: "喜び・驚き・安心などの感情", category: "強調・共感",
+      prompt: "記事の内容に合った感情（喜び、驚き、安心、期待など）を表現する人物のイラストまたは写真を生成してください。読者が感情移入できるような表情やポーズにしてください。" },
 
-    // ===== 商品訴求 =====
-    product_features: { icon: "🎯", name: "機能まとめ（アイコン）", desc: "商品中央+周囲に機能アイコン", category: "商品訴求",
-      prompt: "Centered cosmetic product shot on a soft pink-to-cream gradient background. Around the product, 4-6 small circular icons each containing a simple line-art illustration of a cosmetic item (sunscreen, primer, foundation, concealer, powder). The layout communicates all-in-one. Elegant, premium feel with warm pink/beige/gold color palette. Leave clear empty space at the top for text overlay. DO NOT include any text, letters, words, labels, or characters." },
-    product_scene: { icon: "💄", name: "使用シーン", desc: "商品の使用写真", category: "商品訴求",
-      prompt: "Close-up photo of a Japanese woman applying a cosmetic product to her cheek/face. Soft, flattering lighting on clear beautiful skin. Clean, editorial beauty photography style. Warm skin tones, soft focus background. The image conveys premium quality and effortless beauty. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, letters, words, or characters." },
-    easy_use: { icon: "🧴", name: "簡単さアピール", desc: "簡単な動作の写真", category: "商品訴求",
-      prompt: "Photo of a Japanese woman performing a simple beauty action (washing face with foam or applying product). She wears a headband, casual/comfortable setting with warm natural lighting. Clean white/bright background area on one side. Warm, approachable, lifestyle photography feel. Leave clear empty space for text overlay. DO NOT include any text, letters, words, or characters." },
+    // ===== ビジュアライズ =====
+    mechanism: { icon: "🔬", name: "メカニズム図解", desc: "仕組みや原理をわかりやすく図解", category: "ビジュアライズ",
+      prompt: "記事で説明されている仕組み・メカニズム・原理を、シンプルでわかりやすい図解イラストにしてください。矢印や簡単なアイコンを使い、一目で理解できる構成にしてください。情報は必要最小限に絞ってください。" },
+    comparison: { icon: "🔄", name: "比較・対比", desc: "ビフォーアフターや左右比較", category: "ビジュアライズ",
+      prompt: "記事の内容にある比較や対比を、左右分割またはビフォーアフター形式でビジュアル化してください。違いが一目でわかるように、色やサイズのコントラストを活用してください。" },
+    data_visual: { icon: "📊", name: "数値・データの可視化", desc: "統計や数値をビジュアルで表現", category: "ビジュアライズ",
+      prompt: "記事に含まれる数値やデータを、視覚的にインパクトのある形で表現してください。グラフ、チャート、大きな数字表示など、一目で数値の意味が伝わる挿絵にしてください。" },
+    step_process: { icon: "👣", name: "ステップ・手順", desc: "手順やフローをわかりやすく図解", category: "ビジュアライズ",
+      prompt: "記事で説明されている手順・ステップ・フローを、シンプルな図解で表現してください。番号付きのステップ、矢印での流れ、かわいいイラストを組み合わせて、手順が一目でわかるようにしてください。" },
 
-    // ===== 比較・証明 =====
-    before_after: { icon: "🔄", name: "ビフォーアフター（イラスト）", desc: "左右分割のイラスト比較", category: "比較・証明",
-      prompt: "Split-screen illustration. LEFT side: dark gray background showing a worried/tired woman looking in a mirror (representing the problem). RIGHT side: warm pink background showing the same woman looking happy/confident in a mirror with sparkles (representing the solution). Cute Japanese manga/illustration style with soft lines. Dramatic contrast between gray (before) and pink (after). Leave clear empty space at top for text overlay. DO NOT include any text, letters, words, labels, or characters." },
-    price_compare: { icon: "💰", name: "価格比較（左右対比）", desc: "従来コスト vs 本商品の価格比較", category: "比較・証明",
-      prompt: "Clean split-screen infographic design. LEFT side (light blue background) shows a vertical stack of 5-6 individual cosmetic product illustrations. RIGHT side (soft pink background) shows a single product illustration, visually prominent and appealing. A visual arrow or comparison indicator between the two sides. Clean, infographic style with product illustrations. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, numbers, prices, letters, words, or characters." },
-    expert_endorse: { icon: "👩‍⚕️", name: "専門家推薦", desc: "プロの推薦+写真", category: "比較・証明",
-      prompt: "Professional endorsement layout. A professional Japanese woman (makeup artist or dermatologist) in a white coat in an elegant clinic/studio setting. Soft pink accent color on borders/corners. Premium, trustworthy editorial feel that builds authority and credibility. Leave clear empty space at top and bottom for text overlay. DO NOT include any text, letters, words, quotes, or characters." },
-
-    // ===== ポイント・手順 =====
-    points_list: { icon: "📋", name: "ポイントまとめ", desc: "番号付きポイント一覧リスト", category: "ポイント・手順",
-      prompt: "Warm beige/cream gradient background with a small cosmetic product image in the top-left corner. Below, 4-6 horizontal rows separated by thin lines, each row having a coral/pink oval badge on the left side. Clean, organized layout that is easy to scan. Color palette: warm beige background, coral/brown accents. Leave abundant empty space in each row for text overlay. DO NOT include any text, numbers, letters, words, or characters." },
-    step_flow: { icon: "👣", name: "手順フロー（イラスト）", desc: "ステップ図解+かわいいイラスト", category: "ポイント・手順",
-      prompt: "Horizontal 3-step process flow illustration on a clean white/light background. Each step shows a warm orange circle containing a cute simple illustration of a person performing a daily action. Steps are connected by triangular arrow indicators between them. Illustration style is friendly, simple line-art with warm colors (orange circles, soft skin tones). The overall feel is easy and friendly. Warm orange/beige color palette. Leave empty space below each circle for text overlay. DO NOT include any text, numbers, letters, words, labels, or characters." },
-    payment_flow: { icon: "💳", name: "支払い方法説明", desc: "支払い手順のイラストフロー", category: "ポイント・手順",
-      prompt: "Payment/delivery process infographic illustration on cream/white background with a thin coral/brown decorative border. 3 steps shown horizontally: each step has a cute illustration (delivery person, woman checking a box, wallet/payment) inside a warm-toned circle. Connected by arrow indicators. Friendly illustration style, warm brown/coral/beige color palette. Reassuring and clear. Leave empty space above and below each illustration for text overlay. DO NOT include any text, numbers, letters, words, labels, or characters." },
-
-    // ===== CTA・緊急性 =====
-    campaign_gold: { icon: "✨", name: "キャンペーン見出し", desc: "ゴールド背景+豪華な雰囲気", category: "CTA・緊急性",
-      prompt: "Luxurious banner background. Warm golden bokeh/sparkle gradient (champagne gold to soft white light). Scattered gold particles and light flares. The mood is premium, exciting, special occasion. No product or person — purely decorative luxurious gold particle background with abundant empty space in the center for text overlay. DO NOT include any text, letters, words, or characters." },
-    discount_appeal: { icon: "🏷️", name: "割引訴求（イラスト）", desc: "イラスト+お得感の演出", category: "CTA・緊急性",
-      prompt: "Soft pink/cream background. Center shows a cute simple line-art illustration of a relaxed woman using a smartphone on a bed/couch, looking happy. Small decorative speech-bubble shapes (empty, no text) in the upper area. A decorative star/sparkle element in the lower area. The overall feel is casual, approachable, and exciting. Warm pink/coral palette, manga-influenced illustration style. Leave abundant empty space for text overlay. DO NOT include any text, numbers, letters, words, or characters." },
-    cost_per_use: { icon: "🪙", name: "コスパ訴求（1回あたり）", desc: "イラスト+コインの演出", category: "CTA・緊急性",
-      prompt: "Soft pink/cream background. A cute simple line-art illustration of a happy woman making an OK hand gesture, smiling brightly. Above her head, several floating coin illustrations (Japanese style coins). The mood is cheerful and delighted. Simple line-art illustration style with warm pink/beige/coral palette. Leave abundant empty space at top and bottom for text overlay. DO NOT include any text, numbers, prices, letters, words, or characters." },
-    urgency_notice: { icon: "⚠️", name: "緊急性・注意喚起", desc: "警告風カード+緊急感", category: "CTA・緊急性",
-      prompt: "Clean white card with a thin dashed coral/red decorative border (rounded corners). A small cosmetic product image positioned to the right side of the card. The mood is polite but urgent. White background, coral/red decorative accents, clean minimal layout. Leave abundant empty space in the center and top for text overlay. DO NOT include any text, letters, words, headings, or characters." },
+    // ===== 補足・説明 =====
+    product_intro: { icon: "💄", name: "商品・素材の紹介", desc: "商品や成分のビジュアル紹介", category: "補足・説明",
+      prompt: "記事で紹介されている商品や素材・成分を、魅力的にビジュアル化してください。商品パッケージ、原材料のイメージ、成分のイラストなど、記事の内容に合った表現にしてください。" },
+    usage_scene: { icon: "🧴", name: "使用シーン", desc: "実際の使用場面をビジュアル化", category: "補足・説明",
+      prompt: "記事で説明されている商品やサービスの使用シーンを、自然でリアルな場面としてビジュアル化してください。日常の中で使っている様子が伝わるような画像にしてください。" },
+    expert: { icon: "👩‍⚕️", name: "専門家・権威", desc: "専門家の存在感を視覚化", category: "補足・説明",
+      prompt: "記事に登場する専門家、医師、研究者などの権威ある存在を視覚的に表現してください。信頼感と説得力が伝わるような画像にしてください。" },
   };
 
   // --- DOM ---
@@ -424,13 +410,23 @@ document.addEventListener("DOMContentLoaded", () => {
   let pendingSelected = []; // selected items waiting for generation
 
   const DEFAULT_PROMPT = `#役割
-あなたは広告マーケを担当するプロのライターです。
-選択した参考画像のレイアウトやトンマナを参考にしながら、
-選択したコピーの内容を補足する画像を生成してください。
+あなたは記事LPの挿絵を制作するビジュアルデザイナーです。
 
-#前提条件
-この画像は記事広告の本文内に挿入する画像です。
-読み手の理解促進を促すための挿絵としての役割を果たすような画像にしてください。`;
+#目的
+この画像は記事広告の本文中に挿入する「挿絵」です。
+読者がテキストだけでは理解しにくい内容を、ビジュアルで理解促進するために使います。
+
+#挿絵の方針
+- 記事の内容に応じて、最適な表現方法を選んでください：
+  - 内容を「強調」する画像（重要ポイントを視覚的にインパクトで伝える）
+  - 内容を「ビジュアライズ」する画像（仕組みやデータを図解で見える化する）
+  - 内容に「共感」を生む画像（読者の感情に寄り添うシーンを描く）
+- 1枚の画像で伝えるメッセージは1つだけに絞ってください
+- 読者が一目見て内容を理解できるシンプルさを優先してください
+
+#参考画像がある場合
+参考画像のデザインスタイル（配色・構図・雰囲気）だけを参考にし、
+被写体やシーンは記事の内容に合わせてください。`;
 
   // --- Load reference images from admin page's localStorage ---
   function getRefImages() {
@@ -848,7 +844,12 @@ ${sec.content}`;
       const userPrompt = perItemPrompts[i] || DEFAULT_PROMPT;
 
       try {
-        // 案B: 参考画像がある場合、スタイルをテキスト分析してから画像生成
+        // 記事内容を「この挿絵が伝えるべき1メッセージ」に要約
+        loadingText.textContent = `内容を整理中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
+        const oneMessage = await summarizeForIllustration(section, typeInfo);
+        console.log("[Summary]", oneMessage);
+
+        // 案B: 参考画像がある場合、スタイルをテキスト分析
         let styleDesc = "";
         if (refId) {
           const refImg = getRefImages().find(r => r.id === refId);
@@ -860,7 +861,7 @@ ${sec.content}`;
         }
 
         loadingText.textContent = `画像を生成中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
-        const callParts = buildImageParts(section, typeInfo, styleDesc, userPrompt);
+        const callParts = buildImageParts(oneMessage, typeInfo, styleDesc, userPrompt);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
         const byteChars = atob(result.imageBase64);
@@ -893,6 +894,32 @@ ${sec.content}`;
       showError(stepsEl.step3.querySelector(".step-content"), "すべての画像生成に失敗しました。プロンプトやAPIキーを確認してください。");
     }
   });
+
+  // --- 記事内容を「この挿絵が伝えるべき1メッセージ」に要約 ---
+  async function summarizeForIllustration(section, typeInfo) {
+    const prompt = `以下の記事セクションを読み、挿絵画像が伝えるべき「1つのメッセージ」を抽出してください。
+
+【記事セクション】
+タイトル: ${section.title}
+内容: ${section.content.substring(0, 500)}
+
+【画像タイプ】
+${typeInfo.name}（${typeInfo.desc}）
+
+【ルール】
+- この挿絵が伝えるべきことを1〜2文で簡潔にまとめてください
+- 読者が画像を見て直感的に理解できるメッセージにしてください
+- 具体的な商品名・成分名・数値があれば含めてください
+- 余計な修飾語は省き、要点だけにしてください
+- テキストのみ返してください（JSON不要）`;
+
+    try {
+      const result = await callGeminiText(prompt, 512);
+      return result.trim();
+    } catch {
+      return `${section.title}: ${section.content.substring(0, 100)}`;
+    }
+  }
 
   // --- 案B: 参考画像のスタイルをテキスト分析（リトライ付き） ---
   async function analyzeRefStyle(dataUrl) {
@@ -954,40 +981,33 @@ ${sec.content}`;
     return "";
   }
 
-  // --- Build image generation parts (案B: スタイル記述で渡す + 案A: 内容優先を明示) ---
-  function buildImageParts(section, typeInfo, styleDesc, userPrompt) {
+  // --- Build image generation parts ---
+  function buildImageParts(oneMessage, typeInfo, styleDesc, userPrompt) {
     const parts = [];
 
     let styleSection = "";
     if (styleDesc) {
       styleSection = `
-【参考画像から抽出したデザインスタイル】
-${styleDesc}
-
-★重要★ 上記はデザインスタイル（配色・構図・雰囲気）の参考です。
-被写体や商品は上記スタイルではなく、下記の「コピー（文脈テキスト）」の内容に必ず合わせてください。`;
+【参考画像のデザインスタイル（配色・構図・雰囲気のみ参考）】
+${styleDesc}`;
     }
 
     const prompt = `${userPrompt}
 
-【選択したコピー（文脈テキスト）】
-タイトル: ${section.title}
-内容:
-${section.content.substring(0, 600)}
+【この挿絵が伝えるべきメッセージ】
+${oneMessage}
 ${styleSection}
 
 【画像タイプ】
-${typeInfo.name}（${typeInfo.desc}）
+${typeInfo.name}
 
-【デザインの方向性】
+【デザイン指示】
 ${typeInfo.prompt}
 
-【最重要ルール】
-- 被写体・商品・シーンは「選択したコピー」の内容に忠実に合わせてください
-- デザインスタイル（配色・構図・雰囲気）だけ参考画像に倣ってください
-- 画像サイズは1280×720pxの構図で作成してください
-- テキストは読みやすいフォントで出力してください
-- 1つの完成されたクリエイティブとして出力してください`;
+【出力ルール】
+- 上記の「伝えるべきメッセージ」の内容に忠実な被写体・シーンにしてください
+- 1枚=1メッセージ。情報を詰め込みすぎないでください
+- 画像サイズは1280×720pxの構図で作成してください`;
 
     parts.push({ text: prompt });
 
