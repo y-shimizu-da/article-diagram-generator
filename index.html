@@ -703,14 +703,10 @@ ${text}`;
   function updateRefPicker(sectionIdx, subtypeKey) {
     const picker = document.getElementById(`refpicker-${sectionIdx}`);
     if (!picker) return;
-    const refs = getRefImagesForType(subtypeKey);
-    // Also get all refs for the category
-    const typeInfo = IMAGE_TYPES[subtypeKey];
-    const catRefs = typeInfo ? getRefImages().filter(r => {
-      const rt = IMAGE_TYPES[r.subtype];
-      return rt && rt.category === typeInfo.category;
-    }) : [];
-    const allRefs = [...new Map([...refs, ...catRefs].map(r => [r.id, r])).values()];
+
+    // Show all available reference images (regardless of subtype matching)
+    // since the style is extracted via text analysis, any reference image can be used
+    const allRefs = getRefImages();
 
     if (allRefs.length === 0) {
       picker.innerHTML = `<h4>参考画像</h4><div class="ref-none">参考画像が未登録です。<a href="admin.html" target="_blank">管理画面</a>でアップロードしてください。</div>`;
@@ -725,7 +721,6 @@ ${text}`;
 
     picker.querySelectorAll(".ref-thumb").forEach(thumb => {
       thumb.addEventListener("click", () => {
-        // Toggle selection
         const wasSelected = thumb.classList.contains("selected");
         picker.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
         if (!wasSelected) thumb.classList.add("selected");

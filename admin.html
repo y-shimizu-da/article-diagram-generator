@@ -162,53 +162,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   const CATEGORIES = [
     {
-      id: "empathy",
-      name: "悩み・共感",
-      icon: "😰",
+      id: "emphasis",
+      name: "強調・共感",
+      icon: "⚡",
       subtypes: [
-        { id: "pain_photo", name: "悩み訴求（写真風）", desc: "暗めの背景+悩みテキスト散りばめ" },
-        { id: "pain_deny",  name: "否定訴求（×マーク）", desc: "不要なものに×印+太字テキスト" },
+        { id: "empathy_scene", name: "共感シーン",           desc: "読者の悩みに寄り添うシーン" },
+        { id: "highlight",     name: "キーメッセージ強調",    desc: "重要な主張を視覚的にインパクト" },
+        { id: "emotion",       name: "感情表現",             desc: "喜び・驚き・安心などの感情" },
       ]
     },
     {
-      id: "product",
-      name: "商品訴求",
-      icon: "💄",
+      id: "visualize",
+      name: "ビジュアライズ",
+      icon: "📊",
       subtypes: [
-        { id: "product_features", name: "機能まとめ（アイコン）", desc: "商品中央+周囲に機能アイコン" },
-        { id: "product_scene",    name: "使用シーン",          desc: "商品の使用写真+効果テキスト" },
-        { id: "easy_use",         name: "簡単さアピール",       desc: "簡単な動作の写真+太字メリット" },
+        { id: "mechanism",    name: "メカニズム図解",    desc: "仕組みや原理をわかりやすく図解" },
+        { id: "comparison",   name: "比較・対比",       desc: "ビフォーアフターや左右比較" },
+        { id: "data_visual",  name: "数値・データの可視化", desc: "統計や数値をビジュアルで表現" },
+        { id: "step_process", name: "ステップ・手順",    desc: "手順やフローをわかりやすく図解" },
       ]
     },
     {
-      id: "proof",
-      name: "比較・証明",
-      icon: "🔄",
+      id: "supplement",
+      name: "補足・説明",
+      icon: "💡",
       subtypes: [
-        { id: "before_after",   name: "ビフォーアフター（イラスト）", desc: "左右分割のイラスト比較" },
-        { id: "price_compare",  name: "価格比較（左右対比）",        desc: "従来コスト vs 本商品の価格比較" },
-        { id: "expert_endorse", name: "専門家推薦",                desc: "プロの推薦コメント+写真" },
-      ]
-    },
-    {
-      id: "steps",
-      name: "ポイント・手順",
-      icon: "📋",
-      subtypes: [
-        { id: "points_list",  name: "ポイントまとめ",       desc: "番号付きポイント一覧リスト" },
-        { id: "step_flow",    name: "手順フロー（イラスト）", desc: "ステップ図解+かわいいイラスト" },
-        { id: "payment_flow", name: "支払い方法説明",        desc: "支払い手順のイラストフロー" },
-      ]
-    },
-    {
-      id: "cta",
-      name: "CTA・緊急性",
-      icon: "⚠️",
-      subtypes: [
-        { id: "campaign_gold",  name: "キャンペーン見出し",    desc: "ゴールド背景+大見出し" },
-        { id: "discount_appeal", name: "割引訴求（イラスト）",  desc: "イラスト+割引率の大文字" },
-        { id: "cost_per_use",   name: "コスパ訴求",          desc: "イラスト+インパクトのある単価表示" },
-        { id: "urgency_notice", name: "緊急性・注意喚起",     desc: "警告風カード+注意テキスト" },
+        { id: "product_intro", name: "商品・素材の紹介", desc: "商品や成分のビジュアル紹介" },
+        { id: "usage_scene",   name: "使用シーン",      desc: "実際の使用場面をビジュアル化" },
+        { id: "expert",        name: "専門家・権威",     desc: "専門家の存在感を視覚化" },
       ]
     },
   ];
