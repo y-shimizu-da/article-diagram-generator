@@ -190,18 +190,46 @@
     }
     .ref-none a { color: #4361ee; }
 
-    .loading {
-      position: fixed; inset: 0; background: rgba(255,255,255,0.85);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 1000; backdrop-filter: blur(4px);
+    /* Inline progress bar (non-blocking) */
+    .progress-bar {
+      background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 14px 20px; margin-bottom: 16px;
+      display: none; align-items: center; gap: 12px;
     }
-    .loading.hidden { display: none; }
-    .spinner {
-      width: 44px; height: 44px; border: 4px solid #e9ecef; border-top-color: #4361ee;
-      border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;
+    .progress-bar.active { display: flex; }
+    .progress-bar .spinner-sm {
+      width: 22px; height: 22px; border: 3px solid #e9ecef; border-top-color: #4361ee;
+      border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loadingText { font-size: 0.95rem; color: #555; }
+    .progress-bar .progress-text { font-size: 0.88rem; color: #555; }
+
+    /* Legacy loading overlay - hidden */
+    .loading { display: none !important; }
+
+    /* Regenerate UI on each card */
+    .regen-area {
+      padding: 12px 18px; border-top: 1px solid #eee; background: #fafbff;
+    }
+    .regen-area summary {
+      font-size: 0.82rem; color: #4361ee; cursor: pointer; font-weight: 600;
+      padding: 4px 0;
+    }
+    .regen-area summary:hover { text-decoration: underline; }
+    .regen-area .regen-body { padding-top: 8px; }
+    .regen-area textarea {
+      width: 100%; min-height: 60px; padding: 8px; border: 1px solid #ddd;
+      border-radius: 6px; font-size: 0.82rem; line-height: 1.5; resize: vertical;
+      font-family: inherit; margin-bottom: 8px;
+    }
+    .regen-area textarea:focus { outline: none; border-color: #4361ee; }
+    .regen-area .regen-btn {
+      padding: 6px 16px; background: #4361ee; color: #fff; border: none;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    .regen-area .regen-btn:hover { background: #3651d4; }
+    .regen-area .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .regen-area .regen-status { font-size: 0.78rem; color: #888; margin-left: 8px; }
     .error-msg {
       background: #fff0f0; color: #c33; padding: 12px 16px;
       border-radius: 8px; margin-top: 12px; font-size: 0.9rem;
@@ -331,6 +359,10 @@
         <h2>生成された画像</h2>
       </div>
       <div class="step-content">
+        <div id="progressBar" class="progress-bar">
+          <div class="spinner-sm"></div>
+          <span class="progress-text" id="progressText">生成中...</span>
+        </div>
         <div id="diagramsOutput"></div>
         <div class="actions">
           <button id="backBtn" class="btn secondary">文脈選択に戻る</button>
@@ -836,8 +868,12 @@ ${sec.content}`;
 
     generatedDiagrams = [];
     diagramsOutput.innerHTML = "";
-    showStep("step3"); // Show step 3 immediately so results appear as they come
-    showLoading("画像を生成中...");
+    showStep("step3");
+
+    // Non-blocking progress bar
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    progressBar.classList.add("active");
 
     let completed = 0;
     let errors = 0;
@@ -845,18 +881,15 @@ ${sec.content}`;
     for (let i = 0; i < pendingSelected.length; i++) {
       const { idx, imageType, refId } = pendingSelected[i];
       const section = sections[idx];
-      const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.pain_photo;
+      const typeInfo = IMAGE_TYPES[imageType] || IMAGE_TYPES.empathy_scene;
       const userPrompt = perItemPrompts[i] || DEFAULT_PROMPT;
 
       try {
-        // 記事内容を「この挿絵が伝えるべき1メッセージ」に要約
-        // 記事内容を1メッセージに要約
-        loadingText.textContent = `内容を整理中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
+        progressText.textContent = `内容を整理中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
         const oneMessage = await summarizeForIllustration(section, typeInfo);
         console.log("[Summary]", oneMessage);
 
-        // 画像生成（参考画像は直接渡す）
-        loadingText.textContent = `画像を生成中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
+        progressText.textContent = `画像を生成中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
         const callParts = buildImageParts(oneMessage, typeInfo, refId, userPrompt);
         const result = await callGeminiImageWithRetry(callParts, 5);
 
@@ -870,24 +903,27 @@ ${sec.content}`;
           typeName: typeInfo.name,
           compositeBlob: blob,
           summary: result.text || section.title,
+          // Store context for regeneration
+          _section: section,
+          _typeInfo: typeInfo,
+          _refId: refId,
+          _userPrompt: userPrompt,
+          _oneMessage: oneMessage,
         };
         generatedDiagrams.push(diagramData);
-
-        // Append this result immediately
         appendDiagramCard(diagramData, generatedDiagrams.length - 1);
       } catch (err) {
         errors++;
-        // Show error card for this item
         appendErrorCard(section.title, typeInfo.name, err.message);
       }
       completed++;
     }
 
-    hideLoading();
+    progressBar.classList.remove("active");
     if (errors > 0 && errors < pendingSelected.length) {
-      showError(stepsEl.step3.querySelector(".step-content"), `${errors}件の画像生成に失敗しました。成功した画像は上に表示されています。`);
+      showError(stepsEl.step3.querySelector(".step-content"), `${errors}件の画像生成に失敗しました。`);
     } else if (errors === pendingSelected.length) {
-      showError(stepsEl.step3.querySelector(".step-content"), "すべての画像生成に失敗しました。プロンプトやAPIキーを確認してください。");
+      showError(stepsEl.step3.querySelector(".step-content"), "すべての画像生成に失敗しました。");
     }
   });
 
@@ -955,6 +991,7 @@ ${typeInfo.prompt}
   function appendDiagramCard(d, index) {
     const card = document.createElement("div");
     card.className = "diagram-card";
+    card.dataset.diagramIndex = index;
     card.innerHTML = `
       <div class="diagram-card-header">
         <h3>${esc(d.title)} <span style="font-size:0.8rem;color:#888;font-weight:400;">— ${esc(d.typeName)}</span></h3>
@@ -964,6 +1001,16 @@ ${typeInfo.prompt}
       </div>
       <div class="diagram-card-body"></div>
       <div class="diagram-summary">${esc(d.summary)}</div>
+      <div class="regen-area">
+        <details>
+          <summary>修正指示を出して再生成</summary>
+          <div class="regen-body">
+            <textarea class="regen-prompt" placeholder="例: もっとシンプルに / イラスト風にして / 背景を明るく...">${esc(d._userPrompt || "")}</textarea>
+            <button class="regen-btn" data-regen-index="${index}">再生成</button>
+            <span class="regen-status"></span>
+          </div>
+        </details>
+      </div>
     `;
     const img = document.createElement("img");
     img.src = URL.createObjectURL(d.compositeBlob);
@@ -972,7 +1019,6 @@ ${typeInfo.prompt}
     img.style.borderRadius = "8px";
     card.querySelector(".diagram-card-body").appendChild(img);
     diagramsOutput.appendChild(card);
-    // Scroll to the new card
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -988,18 +1034,72 @@ ${typeInfo.prompt}
     diagramsOutput.appendChild(card);
   }
 
-  // --- Download ---
-  diagramsOutput.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-action]");
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.index);
-    const d = generatedDiagrams[idx];
-    if (!d) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(d.compositeBlob);
-    a.download = `${d.title}.png`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+  // --- Download & Regenerate ---
+  diagramsOutput.addEventListener("click", async (e) => {
+    // Download
+    const dlBtn = e.target.closest("[data-action='dl-png']");
+    if (dlBtn) {
+      const idx = parseInt(dlBtn.dataset.index);
+      const d = generatedDiagrams[idx];
+      if (!d) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(d.compositeBlob);
+      a.download = `${d.title}.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      return;
+    }
+
+    // Regenerate
+    const regenBtn = e.target.closest("[data-regen-index]");
+    if (regenBtn) {
+      const idx = parseInt(regenBtn.dataset.regenIndex);
+      const d = generatedDiagrams[idx];
+      if (!d) return;
+
+      const card = regenBtn.closest(".diagram-card");
+      const textarea = card.querySelector(".regen-prompt");
+      const statusEl = card.querySelector(".regen-status");
+      const newPrompt = textarea.value.trim();
+      if (!newPrompt) return;
+
+      regenBtn.disabled = true;
+      statusEl.textContent = "再生成中...";
+
+      try {
+        // Re-summarize with the same section
+        const oneMessage = d._oneMessage || d.title;
+
+        const callParts = buildImageParts(oneMessage, d._typeInfo, d._refId, newPrompt);
+        const result = await callGeminiImageWithRetry(callParts, 5);
+
+        const byteChars = atob(result.imageBase64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let j = 0; j < byteChars.length; j++) byteArray[j] = byteChars.charCodeAt(j);
+        const blob = new Blob([byteArray], { type: result.mimeType });
+
+        // Update the diagram data
+        d.compositeBlob = blob;
+        d.summary = result.text || d.title;
+        d._userPrompt = newPrompt;
+
+        // Replace image in card
+        const imgEl = card.querySelector(".diagram-card-body img");
+        const oldSrc = imgEl.src;
+        imgEl.src = URL.createObjectURL(blob);
+        URL.revokeObjectURL(oldSrc);
+
+        // Update summary
+        card.querySelector(".diagram-summary").textContent = d.summary;
+
+        statusEl.textContent = "完了";
+        setTimeout(() => { statusEl.textContent = ""; }, 3000);
+      } catch (err) {
+        statusEl.textContent = `エラー: ${err.message}`;
+      } finally {
+        regenBtn.disabled = false;
+      }
+    }
   });
 
   downloadAllBtn.addEventListener("click", () => {
