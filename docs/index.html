@@ -694,6 +694,74 @@ ${text}`;
     return html;
   }
 
+  // Save current UI state (checked, image type, selected ref) per section
+  function saveSelectionState() {
+    const state = {};
+    sectionsList.querySelectorAll(".section-card").forEach(card => {
+      const idx = parseInt(card.dataset.sectionIndex);
+      const cb = card.querySelector("input[type=checkbox]");
+      const typeRadio = card.querySelector("input[type=radio]:checked");
+      const selectedRef = card.querySelector(".ref-thumb.selected");
+      state[idx] = {
+        checked: cb?.checked || false,
+        imageType: typeRadio?.value || "",
+        refId: selectedRef?.dataset.refId || "",
+      };
+    });
+    return state;
+  }
+
+  // Map old state indices to new indices after merge/split
+  function mapState(oldState, changeIdx, changeType, newCount) {
+    const mapped = {};
+    for (const [oldIdxStr, val] of Object.entries(oldState)) {
+      const oldIdx = parseInt(oldIdxStr);
+      let newIdx = oldIdx;
+      if (changeType === "merge") {
+        if (oldIdx === changeIdx + 1) continue; // merged into changeIdx
+        if (oldIdx > changeIdx + 1) newIdx = oldIdx - 1;
+      } else if (changeType === "split") {
+        // splitCount = how many new sections replaced the one at changeIdx
+        if (oldIdx === changeIdx) continue; // will be replaced
+        if (oldIdx > changeIdx) newIdx = oldIdx + (newCount - 1);
+      }
+      if (newIdx >= 0) mapped[newIdx] = val;
+    }
+    return mapped;
+  }
+
+  function restoreSelectionState(state) {
+    sectionsList.querySelectorAll(".section-card").forEach(card => {
+      const idx = parseInt(card.dataset.sectionIndex);
+      const saved = state[idx];
+      if (!saved) return;
+      // Restore checked
+      const cb = card.querySelector("input[type=checkbox]");
+      if (cb && saved.checked) {
+        cb.checked = true;
+        card.classList.add("selected");
+      }
+      // Restore image type
+      if (saved.imageType) {
+        const radio = card.querySelector(`input[type=radio][value="${saved.imageType}"]`);
+        if (radio) radio.checked = true;
+      }
+      // Restore ref image (need to trigger picker first)
+      if (saved.checked) {
+        const checkedRadio = card.querySelector("input[type=radio]:checked");
+        if (checkedRadio) updateRefPicker(idx, checkedRadio.value);
+        // After picker rendered, select the ref
+        if (saved.refId) {
+          setTimeout(() => {
+            const thumb = card.querySelector(`.ref-thumb[data-ref-id="${saved.refId}"]`);
+            if (thumb) thumb.classList.add("selected");
+          }, 50);
+        }
+      }
+    });
+    updateGenerateBtn();
+  }
+
   function renderSections() {
     sectionsList.innerHTML = "";
     sections.forEach((sec, i) => {
@@ -822,14 +890,20 @@ ${text}`;
 
   function mergeSections(idxA, idxB) {
     if (idxA < 0 || idxB >= sections.length) return;
+    const oldState = saveSelectionState();
     const a = sections[idxA], b = sections[idxB];
     sections.splice(idxA, 2, { title: a.title.length >= b.title.length ? a.title : b.title, content: a.content + "\n" + b.content });
+    const newState = mapState(oldState, idxA, "merge", 0);
     renderSections();
+    restoreSelectionState(newState);
   }
 
   async function splitSection(idx) {
     const sec = sections[idx];
-    showLoading(`「${sec.title}」を分割中...`);
+    const oldState = saveSelectionState();
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    if (progressBar) { progressBar.classList.add("active"); progressText.textContent = `「${sec.title}」を分割中...`; }
     try {
       const prompt = `以下のテキストを、さらに細かい意味のまとまりに分割してください。
 最低2つ以上のセクションに分けてください。1文〜2文の短いセクションでもOKです。
@@ -846,10 +920,12 @@ ${sec.content}`;
       const subSections = JSON.parse(jsonMatch[0]);
       if (subSections.length < 2) throw new Error("これ以上分割できません");
       sections.splice(idx, 1, ...subSections);
+      const newState = mapState(oldState, idx, "split", subSections.length);
       renderSections();
+      restoreSelectionState(newState);
     } catch (err) {
       showError(stepsEl.step2.querySelector(".step-content"), err.message);
-    } finally { hideLoading(); }
+    } finally { if (progressBar) progressBar.classList.remove("active"); }
   }
 
   // ============================
