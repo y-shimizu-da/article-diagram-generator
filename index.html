@@ -236,6 +236,14 @@
     }
     .hint-text { font-size: 0.82rem; color: #888; margin-bottom: 16px; line-height: 1.6; }
 
+    /* Ref picker filters */
+    .ref-filters { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .ref-filters select {
+      padding: 4px 8px; border: 1px solid #ddd; border-radius: 6px;
+      font-size: 0.78rem; background: #fff; color: #333; cursor: pointer;
+    }
+    .ref-filters select:focus { outline: none; border-color: #4361ee; }
+
     /* Prompt cards */
     .prompt-card {
       border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 14px;
@@ -383,6 +391,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   // Image type definitions for article LP
   // ============================================================
+  // Genre definitions for ref image filtering (must match admin.html)
+  const REF_INDUSTRIES = [
+    { id: "beauty", name: "美容・コスメ" }, { id: "health", name: "健康・サプリ" },
+    { id: "food", name: "食品・飲料" }, { id: "fashion", name: "ファッション" },
+    { id: "lifestyle", name: "生活・雑貨" }, { id: "finance", name: "金融・保険" },
+    { id: "education", name: "教育・学習" }, { id: "other", name: "その他" },
+  ];
+  const REF_SUBTYPES = [
+    { id: "empathy", name: "共感・悩み" }, { id: "highlight", name: "強調・インパクト" },
+    { id: "mechanism", name: "図解・メカニズム" }, { id: "comparison", name: "比較・対比" },
+    { id: "data", name: "数値・データ" }, { id: "steps", name: "手順・フロー" },
+    { id: "product", name: "商品・素材" }, { id: "scene", name: "使用シーン" },
+    { id: "expert", name: "専門家・権威" }, { id: "cta", name: "CTA・訴求" },
+  ];
+
   const IMAGE_TYPES = {
     // ===== 強調・共感 =====
     empathy_scene: { icon: "😰", name: "共感シーン", desc: "読者の悩みに寄り添うシーン", category: "強調・共感",
@@ -736,28 +759,61 @@ ${text}`;
     const picker = document.getElementById(`refpicker-${sectionIdx}`);
     if (!picker) return;
 
-    // Show all available reference images (regardless of subtype matching)
-    // since the style is extracted via text analysis, any reference image can be used
     const allRefs = getRefImages();
-
     if (allRefs.length === 0) {
       picker.innerHTML = `<h4>参考画像</h4><div class="ref-none">参考画像が未登録です。<a href="admin.html" target="_blank">管理画面</a>でアップロードしてください。</div>`;
       return;
     }
-    picker.innerHTML = `<h4>参考画像を選択（任意）</h4><div class="ref-grid">${allRefs.map(r =>
-      `<div class="ref-thumb" data-ref-id="${r.id}" data-section="${sectionIdx}">
-        <img src="${r.dataUrl}" alt="${r.subtype}">
-        <span class="ref-label">${esc(IMAGE_TYPES[r.subtype]?.name || r.subtype)}</span>
-      </div>`
-    ).join("")}</div>`;
 
-    picker.querySelectorAll(".ref-thumb").forEach(thumb => {
-      thumb.addEventListener("click", () => {
-        const wasSelected = thumb.classList.contains("selected");
-        picker.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
-        if (!wasSelected) thumb.classList.add("selected");
+    // Build filter + grid
+    picker.innerHTML = `
+      <h4>参考画像を選択（任意）</h4>
+      <div class="ref-filters">
+        <select class="ref-filter-industry" data-section="${sectionIdx}">
+          <option value="">業界: すべて</option>
+          ${REF_INDUSTRIES.map(i => `<option value="${i.id}">${i.name}</option>`).join("")}
+        </select>
+        <select class="ref-filter-type" data-section="${sectionIdx}">
+          <option value="">種別: すべて</option>
+          ${REF_SUBTYPES.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
+        </select>
+      </div>
+      <div class="ref-grid" id="refgrid-${sectionIdx}"></div>
+    `;
+
+    function renderRefGrid() {
+      const indFilter = picker.querySelector(".ref-filter-industry").value;
+      const typeFilter = picker.querySelector(".ref-filter-type").value;
+      let filtered = allRefs;
+      if (indFilter) filtered = filtered.filter(r => (r.industry || r.category) === indFilter);
+      if (typeFilter) filtered = filtered.filter(r => (r.imageType || r.subtype) === typeFilter);
+
+      const grid = picker.querySelector(`#refgrid-${sectionIdx}`);
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="ref-none">条件に合う画像がありません</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(r => {
+        const indName = REF_INDUSTRIES.find(i => i.id === (r.industry || r.category))?.name || "";
+        const typeName = REF_SUBTYPES.find(t => t.id === (r.imageType || r.subtype))?.name || (r.imageType || r.subtype || "");
+        return `<div class="ref-thumb" data-ref-id="${r.id}" data-section="${sectionIdx}">
+          <img src="${r.dataUrl}" alt="${r.subtype}">
+          <span class="ref-label">${esc(indName)} ${esc(typeName)}</span>
+        </div>`;
+      }).join("");
+
+      grid.querySelectorAll(".ref-thumb").forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          const wasSelected = thumb.classList.contains("selected");
+          grid.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
+          if (!wasSelected) thumb.classList.add("selected");
+        });
       });
-    });
+    }
+
+    picker.querySelector(".ref-filter-industry").addEventListener("change", renderRefGrid);
+    picker.querySelector(".ref-filter-type").addEventListener("change", renderRefGrid);
+    renderRefGrid();
   }
 
   function updateGenerateBtn() {

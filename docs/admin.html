@@ -158,43 +158,33 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   // ============================================================
-  // Category & subtype definitions (matching IMAGE_TYPES)
+  // 2-axis labeling: Industry × Image Type
   // ============================================================
-  const CATEGORIES = [
-    {
-      id: "emphasis",
-      name: "強調・共感",
-      icon: "⚡",
-      subtypes: [
-        { id: "empathy_scene", name: "共感シーン",           desc: "読者の悩みに寄り添うシーン" },
-        { id: "highlight",     name: "キーメッセージ強調",    desc: "重要な主張を視覚的にインパクト" },
-        { id: "emotion",       name: "感情表現",             desc: "喜び・驚き・安心などの感情" },
-      ]
-    },
-    {
-      id: "visualize",
-      name: "ビジュアライズ",
-      icon: "📊",
-      subtypes: [
-        { id: "mechanism",    name: "メカニズム図解",    desc: "仕組みや原理をわかりやすく図解" },
-        { id: "comparison",   name: "比較・対比",       desc: "ビフォーアフターや左右比較" },
-        { id: "data_visual",  name: "数値・データの可視化", desc: "統計や数値をビジュアルで表現" },
-        { id: "step_process", name: "ステップ・手順",    desc: "手順やフローをわかりやすく図解" },
-      ]
-    },
-    {
-      id: "supplement",
-      name: "補足・説明",
-      icon: "💡",
-      subtypes: [
-        { id: "product_intro", name: "商品・素材の紹介", desc: "商品や成分のビジュアル紹介" },
-        { id: "usage_scene",   name: "使用シーン",      desc: "実際の使用場面をビジュアル化" },
-        { id: "expert",        name: "専門家・権威",     desc: "専門家の存在感を視覚化" },
-      ]
-    },
+  const INDUSTRIES = [
+    { id: "beauty",     name: "美容・コスメ" },
+    { id: "health",     name: "健康・サプリ" },
+    { id: "food",       name: "食品・飲料" },
+    { id: "fashion",    name: "ファッション" },
+    { id: "lifestyle",  name: "生活・雑貨" },
+    { id: "finance",    name: "金融・保険" },
+    { id: "education",  name: "教育・学習" },
+    { id: "other",      name: "その他" },
   ];
 
-  // State: array of { id, filename, category, subtype, dataUrl, width, height, size }
+  const IMAGE_SUBTYPES = [
+    { id: "empathy",    name: "共感・悩み",     desc: "読者の悩みに寄り添うシーン" },
+    { id: "highlight",  name: "強調・インパクト", desc: "重要メッセージを視覚的に強調" },
+    { id: "mechanism",  name: "図解・メカニズム", desc: "仕組みや原理の図解" },
+    { id: "comparison", name: "比較・対比",      desc: "ビフォーアフターや左右比較" },
+    { id: "data",       name: "数値・データ",    desc: "統計や数値のビジュアル表現" },
+    { id: "steps",      name: "手順・フロー",    desc: "ステップやフローの図解" },
+    { id: "product",    name: "商品・素材",      desc: "商品や成分のビジュアル紹介" },
+    { id: "scene",      name: "使用シーン",      desc: "実際の使用場面" },
+    { id: "expert",     name: "専門家・権威",    desc: "専門家の存在感を視覚化" },
+    { id: "cta",        name: "CTA・訴求",      desc: "行動喚起や特典訴求" },
+  ];
+
+  // State: array of { id, filename, industry, imageType, dataUrl, width, height, addedAt }
   let images = JSON.parse(localStorage.getItem("admin_ref_images") || "[]");
 
   const MAX_W = 800;
@@ -207,68 +197,89 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("categorySections");
     container.innerHTML = "";
 
-    CATEGORIES.forEach(cat => {
-      const catImages = images.filter(img => img.category === cat.id);
+    // Upload section (always visible at top)
+    const uploadCard = document.createElement("div");
+    uploadCard.className = "card";
+    uploadCard.innerHTML = `
+      <div class="card-header">
+        <span class="toggle open">&#9654;</span>
+        <h2>📁 画像をアップロード</h2>
+      </div>
+      <div class="card-body open">
+        <div class="subtype-selector">
+          <label>業界:</label>
+          <select id="select-industry">
+            ${INDUSTRIES.map(ind => `<option value="${ind.id}">${ind.name}</option>`).join("")}
+          </select>
+        </div>
+        <div class="subtype-selector" style="margin-top:8px;">
+          <label>画像の種別:</label>
+          <select id="select-imagetype">
+            ${IMAGE_SUBTYPES.map(st => `<option value="${st.id}">${st.name} — ${st.desc}</option>`).join("")}
+          </select>
+        </div>
+        <div class="upload-section" id="upload-area">
+          <div class="upload-icon">📁</div>
+          <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
+          <input type="file" accept="image/*" multiple hidden id="file-input">
+        </div>
+      </div>
+    `;
+    container.appendChild(uploadCard);
+
+    // Upload events
+    const uploadArea = uploadCard.querySelector("#upload-area");
+    const fileInput = uploadCard.querySelector("#file-input");
+    uploadArea.addEventListener("click", () => fileInput.click());
+    uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+    uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+    uploadArea.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadArea.classList.remove("dragover");
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener("change", e => {
+      handleFiles(Array.from(e.target.files));
+      e.target.value = "";
+    });
+
+    // Group images by industry
+    const byIndustry = {};
+    images.forEach(img => {
+      const indId = img.industry || img.category || "other";
+      if (!byIndustry[indId]) byIndustry[indId] = [];
+      byIndustry[indId].push(img);
+    });
+
+    // Render each industry group
+    INDUSTRIES.forEach(ind => {
+      const indImages = byIndustry[ind.id] || [];
+      if (indImages.length === 0) return;
+
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
-        <div class="card-header" data-cat="${cat.id}">
+        <div class="card-header">
           <span class="toggle open">&#9654;</span>
-          <h2>${cat.icon} ${cat.name}</h2>
-          <span class="badge">${catImages.length} 枚</span>
+          <h2>${ind.name}</h2>
+          <span class="badge">${indImages.length} 枚</span>
         </div>
-        <div class="card-body open" id="body-${cat.id}">
-          <div class="subtype-selector">
-            <label>サブタイプを選択してからアップロード:</label>
-            <select id="select-${cat.id}">
-              ${cat.subtypes.map(st => `<option value="${st.id}">${st.name} - ${st.desc}</option>`).join("")}
-            </select>
-          </div>
-          <div class="upload-section" id="upload-${cat.id}">
-            <div class="upload-icon">📁</div>
-            <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
-            <input type="file" accept="image/*" multiple hidden id="file-${cat.id}">
-          </div>
-          <div class="image-grid" id="grid-${cat.id}">
-            ${catImages.length === 0
-              ? '<div class="empty-state">このカテゴリにはまだ画像がありません</div>'
-              : catImages.map(img => renderImageItem(img)).join("")}
+        <div class="card-body open">
+          <div class="image-grid">
+            ${indImages.map(img => renderImageItem(img)).join("")}
           </div>
         </div>
       `;
       container.appendChild(card);
 
-      // Toggle collapse
+      // Toggle
       const header = card.querySelector(".card-header");
       const body = card.querySelector(".card-body");
       const toggle = card.querySelector(".toggle");
-      header.addEventListener("click", () => {
-        body.classList.toggle("open");
-        toggle.classList.toggle("open");
-      });
+      header.addEventListener("click", () => { body.classList.toggle("open"); toggle.classList.toggle("open"); });
 
-      // Upload area events
-      const uploadArea = card.querySelector(`#upload-${cat.id}`);
-      const fileInput = card.querySelector(`#file-${cat.id}`);
-
-      uploadArea.addEventListener("click", () => fileInput.click());
-      uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
-      uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
-      uploadArea.addEventListener("drop", e => {
-        e.preventDefault();
-        uploadArea.classList.remove("dragover");
-        const subtype = document.getElementById(`select-${cat.id}`).value;
-        handleFiles(Array.from(e.dataTransfer.files), cat.id, subtype);
-      });
-      fileInput.addEventListener("change", e => {
-        const subtype = document.getElementById(`select-${cat.id}`).value;
-        handleFiles(Array.from(e.target.files), cat.id, subtype);
-        e.target.value = "";
-      });
-
-      // Image action buttons (delegated)
-      const grid = card.querySelector(`#grid-${cat.id}`);
-      grid.addEventListener("click", e => {
+      // Action buttons
+      card.querySelector(".image-grid").addEventListener("click", e => {
         const btn = e.target.closest("button");
         if (!btn) return;
         const imgId = btn.dataset.id;
@@ -277,16 +288,51 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
+    // Show images with unknown industry
+    const unknownImages = images.filter(img => {
+      const indId = img.industry || img.category || "other";
+      return !INDUSTRIES.find(ind => ind.id === indId);
+    });
+    if (unknownImages.length > 0) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="toggle open">&#9654;</span>
+          <h2>未分類（旧データ）</h2>
+          <span class="badge">${unknownImages.length} 枚</span>
+        </div>
+        <div class="card-body open">
+          <div class="image-grid">
+            ${unknownImages.map(img => renderImageItem(img)).join("")}
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+      const header = card.querySelector(".card-header");
+      const body = card.querySelector(".card-body");
+      const toggle = card.querySelector(".toggle");
+      header.addEventListener("click", () => { body.classList.toggle("open"); toggle.classList.toggle("open"); });
+      card.querySelector(".image-grid").addEventListener("click", e => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        if (btn.classList.contains("btn-download")) downloadImage(btn.dataset.id);
+        if (btn.classList.contains("btn-remove")) removeImage(btn.dataset.id);
+      });
+    }
+
     updateCounts();
   }
 
   function renderImageItem(img) {
-    const subtypeInfo = findSubtype(img.subtype);
+    const indName = INDUSTRIES.find(i => i.id === (img.industry || img.category))?.name || "未分類";
+    const typeName = IMAGE_SUBTYPES.find(t => t.id === (img.imageType || img.subtype))?.name || (img.imageType || img.subtype || "未分類");
     return `
       <div class="image-item">
         <img src="${img.dataUrl}" alt="${img.filename}" loading="lazy">
         <div class="info">
-          <span class="subtype-label">${subtypeInfo ? subtypeInfo.name : img.subtype}</span>
+          <span class="subtype-label">${indName}</span>
+          <span class="subtype-label" style="background:#fef3e0;color:#e65100;">${typeName}</span>
           <div class="filename">${img.filename}</div>
           <div class="size-label">${img.width}x${img.height}</div>
         </div>
@@ -296,14 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
-  }
-
-  function findSubtype(subtypeId) {
-    for (const cat of CATEGORIES) {
-      const found = cat.subtypes.find(s => s.id === subtypeId);
-      if (found) return found;
-    }
-    return null;
   }
 
   function updateCounts() {
@@ -317,12 +355,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
   // Image processing
   // ============================================================
-  function handleFiles(files, categoryId, subtypeId) {
+  function handleFiles(files) {
     const imageFiles = files.filter(f => f.type.startsWith("image/"));
     if (imageFiles.length === 0) {
       showToast("画像ファイルを選択してください");
       return;
     }
+
+    const industryId = document.getElementById("select-industry").value;
+    const imageTypeId = document.getElementById("select-imagetype").value;
 
     let processed = 0;
     imageFiles.forEach(file => {
@@ -333,14 +374,14 @@ document.addEventListener("DOMContentLoaded", () => {
           resizeImage(img, file.name, (resizedDataUrl, w, h) => {
             const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
             const ext = file.name.split(".").pop().toLowerCase();
-            const safeName = `${subtypeId}_${id}.${ext === "png" ? "png" : "jpg"}`;
+            const safeName = `${industryId}_${imageTypeId}_${id}.${ext === "png" ? "png" : "jpg"}`;
 
             images.push({
               id,
               filename: safeName,
               originalName: file.name,
-              category: categoryId,
-              subtype: subtypeId,
+              industry: industryId,
+              imageType: imageTypeId,
               dataUrl: resizedDataUrl,
               width: w,
               height: h,
@@ -404,8 +445,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function generateManifest() {
     return images.map(img => ({
       filename: img.filename,
-      category: img.category,
-      subtype: img.subtype,
+      industry: img.industry || img.category || "other",
+      imageType: img.imageType || img.subtype || "other",
       width: img.width,
       height: img.height,
       addedAt: img.addedAt,
