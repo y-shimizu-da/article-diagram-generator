@@ -85,6 +85,8 @@
       flex: 1; padding: 5px 8px; font-size: 0.72rem; border: 1px solid #ddd;
       background: #fff; border-radius: 5px; cursor: pointer; transition: all 0.15s;
     }
+    .image-item .actions .btn-edit { color: #e65100; }
+    .image-item .actions .btn-edit:hover { background: #fef3e0; border-color: #e65100; }
     .image-item .actions .btn-download:hover { background: #f0f3ff; border-color: #4361ee; color: #4361ee; }
     .image-item .actions .btn-remove { color: #c33; }
     .image-item .actions .btn-remove:hover { background: #fff0f0; border-color: #c33; }
@@ -325,10 +327,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderImageItem(img) {
-    const indName = INDUSTRIES.find(i => i.id === (img.industry || img.category))?.name || "未分類";
-    const typeName = IMAGE_SUBTYPES.find(t => t.id === (img.imageType || img.subtype))?.name || (img.imageType || img.subtype || "未分類");
+    const curInd = img.industry || img.category || "";
+    const curType = img.imageType || img.subtype || "";
+    const indName = INDUSTRIES.find(i => i.id === curInd)?.name || "未分類";
+    const typeName = IMAGE_SUBTYPES.find(t => t.id === curType)?.name || curType || "未分類";
     return `
-      <div class="image-item">
+      <div class="image-item" data-img-id="${img.id}">
         <img src="${img.dataUrl}" alt="${img.filename}" loading="lazy">
         <div class="info">
           <span class="subtype-label">${indName}</span>
@@ -336,7 +340,17 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="filename">${img.filename}</div>
           <div class="size-label">${img.width}x${img.height}</div>
         </div>
+        <div class="edit-labels" style="padding:6px 10px 4px; display:none;">
+          <select class="edit-industry" style="width:100%;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:0.72rem;margin-bottom:4px;">
+            ${INDUSTRIES.map(i => `<option value="${i.id}" ${i.id === curInd ? "selected" : ""}>${i.name}</option>`).join("")}
+          </select>
+          <select class="edit-imagetype" style="width:100%;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:0.72rem;margin-bottom:4px;">
+            ${IMAGE_SUBTYPES.map(t => `<option value="${t.id}" ${t.id === curType ? "selected" : ""}>${t.name}</option>`).join("")}
+          </select>
+          <button class="btn-save-label" data-id="${img.id}" style="width:100%;padding:4px;font-size:0.72rem;background:#4361ee;color:#fff;border:none;border-radius:4px;cursor:pointer;">保存</button>
+        </div>
         <div class="actions">
+          <button class="btn-edit" data-id="${img.id}">編集</button>
           <button class="btn-download" data-id="${img.id}">DL</button>
           <button class="btn-remove" data-id="${img.id}">削除</button>
         </div>
@@ -442,6 +456,23 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("画像を削除しました");
   }
 
+  function toggleEdit(imgId) {
+    const item = document.querySelector(`.image-item[data-img-id="${imgId}"]`);
+    if (!item) return;
+    const editArea = item.querySelector(".edit-labels");
+    editArea.style.display = editArea.style.display === "none" ? "block" : "none";
+  }
+
+  function saveLabelEdit(imgId, itemEl) {
+    const img = images.find(i => i.id === imgId);
+    if (!img) return;
+    img.industry = itemEl.querySelector(".edit-industry").value;
+    img.imageType = itemEl.querySelector(".edit-imagetype").value;
+    saveState();
+    render();
+    showToast("ラベルを更新しました");
+  }
+
   function generateManifest() {
     return images.map(img => ({
       filename: img.filename,
@@ -522,6 +553,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("exportManifestBtn").addEventListener("click", exportManifest);
   document.getElementById("exportAllBtn").addEventListener("click", exportAllImages);
   document.getElementById("clearAllBtn").addEventListener("click", clearAll);
+
+  // Global delegation for edit/save buttons
+  document.getElementById("categorySections").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const imgId = btn.dataset.id;
+    if (btn.classList.contains("btn-edit") && imgId) toggleEdit(imgId);
+    if (btn.classList.contains("btn-save-label") && imgId) saveLabelEdit(imgId, btn.closest(".image-item"));
+  });
 
   // Initial render
   render();
