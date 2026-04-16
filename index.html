@@ -76,6 +76,11 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn.primary { background: #4361ee; color: #fff; }
     .btn.primary:hover:not(:disabled) { background: #3651d4; }
+    .btn.loading { pointer-events: none; opacity: 0.7; display: inline-flex; align-items: center; gap: 8px; }
+    .btn.loading .btn-spinner {
+      width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
     .btn.secondary { background: #e9ecef; color: #495057; }
     .btn.secondary:hover:not(:disabled) { background: #dee2e6; }
 
@@ -234,6 +239,56 @@
       background: #fff0f0; color: #c33; padding: 12px 16px;
       border-radius: 8px; margin-top: 12px; font-size: 0.9rem;
     }
+
+    /* Mode selection */
+    .mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .mode-cards { grid-template-columns: 1fr; } }
+    .mode-card {
+      border: 2px solid #e0e0e0; border-radius: 14px; padding: 28px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafbff;
+    }
+    .mode-card:hover { border-color: #4361ee; background: #f0f3ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(67,97,238,0.12); }
+    .mode-card .mode-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .mode-card .mode-title { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+    .mode-card .mode-desc { font-size: 0.85rem; color: #666; line-height: 1.5; }
+
+    /* Direct input items */
+    .direct-item {
+      border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 12px;
+      overflow: hidden; background: #fff;
+    }
+    .direct-item-header {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      background: #f8f9fa; border-bottom: 1px solid #eee;
+    }
+    .direct-item-header .di-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; background: #4361ee; color: #fff;
+      border-radius: 50%; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .direct-item-header .di-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .direct-item-header .di-remove {
+      padding: 4px 10px; border: 1px solid #ddd; background: #fff; border-radius: 6px;
+      cursor: pointer; font-size: 0.75rem; color: #c33; transition: all 0.15s;
+    }
+    .direct-item-header .di-remove:hover { background: #fff0f0; border-color: #c33; }
+    .direct-item-body { padding: 14px 16px; }
+    .direct-item-body textarea {
+      width: 100%; min-height: 100px; padding: 10px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 0.9rem; line-height: 1.6; resize: vertical; font-family: inherit;
+    }
+    .direct-item-body textarea:focus { outline: none; border-color: #4361ee; }
+    .direct-item-body .di-type-section { margin-top: 12px; }
+    .direct-item-body .di-type-section h4 { font-size: 0.78rem; font-weight: 600; color: #888; margin-bottom: 8px; }
+    .direct-item-body .di-ref-picker { margin-top: 10px; }
+    .direct-item-body .di-ref-picker h4 { font-size: 0.75rem; font-weight: 600; color: #e8788a; margin-bottom: 6px; }
+    .add-item-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px; border: 2px dashed #ccc; border-radius: 10px;
+      background: #fafafa; cursor: pointer; font-size: 0.9rem; color: #666;
+      font-weight: 600; transition: all 0.2s; margin-bottom: 16px;
+    }
+    .add-item-btn:hover { border-color: #4361ee; color: #4361ee; background: #f8f9ff; }
     .hint-text { font-size: 0.82rem; color: #888; margin-bottom: 16px; line-height: 1.6; }
 
     /* Ref picker filters */
@@ -307,8 +362,31 @@
       <span class="status" id="keyStatus"></span>
     </div>
 
+    <!-- Step 0: Mode Selection -->
+    <section id="step0" class="step active">
+      <div class="step-header">
+        <span class="step-number">0</span>
+        <h2>生成モードを選択</h2>
+      </div>
+      <div class="step-content">
+        <p class="hint-text">用途に合わせて生成モードを選んでください。</p>
+        <div class="mode-cards">
+          <div class="mode-card" id="modeSplit">
+            <div class="mode-icon">📄</div>
+            <div class="mode-title">文章分割から生成</div>
+            <div class="mode-desc">記事原稿をアップロードし、AIが文脈ごとに自動分割。<br>セクションを選んで画像を生成します。</div>
+          </div>
+          <div class="mode-card" id="modeDirect">
+            <div class="mode-icon">✏️</div>
+            <div class="mode-title">テキストを直接入力して生成</div>
+            <div class="mode-desc">作図したい文章を直接入力。<br>複数の画像をまとめて生成できます。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Step 1 -->
-    <section id="step1" class="step active">
+    <section id="step1" class="step">
       <div class="step-header">
         <span class="step-number">1</span>
         <h2>記事原稿をアップロード</h2>
@@ -321,7 +399,10 @@
         </div>
         <div class="divider"><span>または</span></div>
         <textarea id="articleText" placeholder="記事原稿をここに貼り付けてください..."></textarea>
-        <button id="splitBtn" class="btn primary" disabled>文脈を分析する</button>
+        <div class="actions" style="margin-top:16px;">
+          <button id="backToMode1Btn" class="btn secondary">モード選択に戻る</button>
+          <button id="splitBtn" class="btn primary" disabled>文脈を分析する</button>
+        </div>
       </div>
     </section>
 
@@ -337,7 +418,30 @@
           「結合」で隣のセクションと統合、「分割」でセクションをさらに細かく分けられます。
         </p>
         <div id="sectionsList"></div>
-        <button id="generateBtn" class="btn primary" disabled>選択した文脈の画像を生成</button>
+        <div class="actions" style="margin-top:16px;">
+          <button id="backToStep1Btn" class="btn secondary">記事入力に戻る</button>
+          <button id="generateBtn" class="btn primary" disabled>選択した文脈の画像を生成</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step Direct: Direct text input mode -->
+    <section id="stepDirect" class="step">
+      <div class="step-header">
+        <span class="step-number">D</span>
+        <h2>テキストを入力して画像を生成</h2>
+      </div>
+      <div class="step-content">
+        <p class="hint-text">
+          作図したい文章を入力し、画像タイプと参考画像（任意）を選択してください。<br>
+          「＋ 項目を追加」で複数の画像をまとめて生成できます。
+        </p>
+        <div id="directItemsList"></div>
+        <button class="add-item-btn" id="addDirectItemBtn">＋ 項目を追加</button>
+        <div class="actions" style="margin-top:8px;">
+          <button id="backToModeBtn" class="btn secondary">モード選択に戻る</button>
+          <button id="directGenerateBtn" class="btn primary" disabled>この内容で画像を生成</button>
+        </div>
       </div>
     </section>
 
@@ -451,8 +555,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingEl = document.getElementById("loading");
   const loadingText = document.getElementById("loadingText");
   const stepsEl = {
+    step0: document.getElementById("step0"),
     step1: document.getElementById("step1"),
     step2: document.getElementById("step2"),
+    stepDirect: document.getElementById("stepDirect"),
     step2half: document.getElementById("step2half"),
     step3: document.getElementById("step3"),
   };
@@ -461,9 +567,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const backToSectionsBtn = document.getElementById("backToSectionsBtn");
   const executeGenerateBtn = document.getElementById("executeGenerateBtn");
 
+  // Direct mode DOM
+  const directItemsList = document.getElementById("directItemsList");
+  const addDirectItemBtn = document.getElementById("addDirectItemBtn");
+  const directGenerateBtn = document.getElementById("directGenerateBtn");
+  const backToModeBtn = document.getElementById("backToModeBtn");
+
   let sections = [];
   let generatedDiagrams = [];
   let pendingSelected = []; // selected items waiting for generation
+  let directItems = []; // direct input mode items
+  let currentMode = "split"; // "split" or "direct"
 
   const DEFAULT_PROMPT = `#役割
 あなたは記事LPの挿絵を制作するビジュアルデザイナーです。
@@ -619,7 +733,216 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ============================
+  // Step 0: Mode Selection
+  // ============================
+  document.getElementById("modeSplit").addEventListener("click", () => { currentMode = "split"; showStep("step1"); });
+  document.getElementById("modeDirect").addEventListener("click", () => {
+    currentMode = "direct";
+    directItems = [];
+    addDirectItem(); // start with one item
+    showStep("stepDirect");
+  });
+
+  // ============================
+  // Direct Input Mode
+  // ============================
+  function addDirectItem() {
+    const itemIndex = directItems.length;
+    directItems.push({ text: "", imageType: "", refId: null });
+    renderDirectItems();
+    return itemIndex;
+  }
+
+  function removeDirectItem(idx) {
+    directItems.splice(idx, 1);
+    renderDirectItems();
+  }
+
+  function renderDirectItems() {
+    directItemsList.innerHTML = "";
+    directItems.forEach((item, i) => {
+      const uid = `di${i}-${Date.now()}`;
+      const div = document.createElement("div");
+      div.className = "direct-item";
+      div.dataset.directIndex = i;
+      div.innerHTML = `
+        <div class="direct-item-header">
+          <span class="di-num">${i + 1}</span>
+          <span class="di-title">画像 ${i + 1}</span>
+          ${directItems.length > 1 ? `<button class="di-remove" data-remove="${i}">削除</button>` : ""}
+        </div>
+        <div class="direct-item-body">
+          <textarea class="di-text" data-index="${i}" placeholder="作図したい文章を入力してください...">${esc(item.text)}</textarea>
+          <div class="di-type-section">
+            <h4>画像タイプを選択</h4>
+            ${buildTypePickerHTML(uid)}
+          </div>
+          <div class="di-ref-picker" id="di-refpicker-${i}"></div>
+        </div>
+      `;
+
+      // Text input change
+      div.querySelector(".di-text").addEventListener("input", (e) => {
+        directItems[i].text = e.target.value;
+        updateDirectGenerateBtn();
+      });
+
+      // Remove button
+      const removeBtn = div.querySelector("[data-remove]");
+      if (removeBtn) removeBtn.addEventListener("click", () => removeDirectItem(i));
+
+      // Type radio change → show ref picker
+      const typeRadios = div.querySelectorAll(`input[name="dtype-${uid}"]`);
+      typeRadios.forEach(radio => {
+        radio.addEventListener("change", () => {
+          directItems[i].imageType = radio.value;
+          updateDirectRefPicker(i);
+        });
+      });
+
+      // Restore previously selected type
+      if (item.imageType) {
+        const savedRadio = div.querySelector(`input[type=radio][value="${item.imageType}"]`);
+        if (savedRadio) savedRadio.checked = true;
+      }
+
+      directItemsList.appendChild(div);
+
+      // Render ref picker for this item
+      updateDirectRefPicker(i);
+
+      // Restore ref selection
+      if (item.refId) {
+        setTimeout(() => {
+          const thumb = div.querySelector(`.ref-thumb[data-ref-id="${item.refId}"]`);
+          if (thumb) thumb.classList.add("selected");
+        }, 50);
+      }
+    });
+    updateDirectGenerateBtn();
+  }
+
+  function updateDirectRefPicker(itemIdx) {
+    const picker = document.getElementById(`di-refpicker-${itemIdx}`);
+    if (!picker) return;
+
+    const allRefs = getRefImages();
+    if (allRefs.length === 0) {
+      picker.innerHTML = `<h4>参考画像</h4><div class="ref-none">参考画像が未登録です。<a href="admin.html" target="_blank">管理画面</a>でアップロードしてください。</div>`;
+      return;
+    }
+
+    picker.innerHTML = `
+      <h4>参考画像を選択（任意）</h4>
+      <div class="ref-grid" id="di-refgrid-${itemIdx}"></div>
+    `;
+
+    const grid = picker.querySelector(`#di-refgrid-${itemIdx}`);
+    grid.innerHTML = allRefs.map(r => {
+      const indName = REF_INDUSTRIES.find(ind => ind.id === (r.industry || r.category))?.name || "";
+      const typeName = REF_SUBTYPES.find(t => t.id === (r.imageType || r.subtype))?.name || (r.imageType || r.subtype || "");
+      return `<div class="ref-thumb" data-ref-id="${r.id}" data-di-index="${itemIdx}">
+        <img src="${r.dataUrl}" alt="${r.subtype}">
+        <span class="ref-label">${esc(indName)} ${esc(typeName)}</span>
+      </div>`;
+    }).join("");
+
+    grid.querySelectorAll(".ref-thumb").forEach(thumb => {
+      thumb.addEventListener("click", () => {
+        const wasSelected = thumb.classList.contains("selected");
+        grid.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
+        if (!wasSelected) {
+          thumb.classList.add("selected");
+          directItems[itemIdx].refId = thumb.dataset.refId;
+        } else {
+          directItems[itemIdx].refId = null;
+        }
+      });
+    });
+  }
+
+  function updateDirectGenerateBtn() {
+    const hasContent = directItems.some(item => item.text.trim().length > 0);
+    directGenerateBtn.disabled = !hasContent;
+  }
+
+  addDirectItemBtn.addEventListener("click", () => addDirectItem());
+  backToModeBtn.addEventListener("click", () => showStep("step0"));
+
+  // Direct mode → Step 2.5 (prompt editing) → Step 3 (generation)
+  directGenerateBtn.addEventListener("click", () => {
+    // Save current text from textareas
+    directItemsList.querySelectorAll(".di-text").forEach(ta => {
+      directItems[parseInt(ta.dataset.index)].text = ta.value;
+    });
+    // Save current type selections
+    directItemsList.querySelectorAll(".direct-item").forEach(div => {
+      const idx = parseInt(div.dataset.directIndex);
+      const checkedRadio = div.querySelector("input[type=radio]:checked");
+      if (checkedRadio) directItems[idx].imageType = checkedRadio.value;
+      const selectedRef = div.querySelector(".ref-thumb.selected");
+      if (selectedRef) directItems[idx].refId = selectedRef.dataset.refId;
+    });
+
+    // Filter items with content
+    const validItems = directItems.filter(item => item.text.trim().length > 0);
+    if (validItems.length === 0) return;
+
+    // Convert to pendingSelected format (same as split mode)
+    // Create temporary sections from direct items
+    sections = validItems.map(item => ({
+      title: item.text.substring(0, 30) + (item.text.length > 30 ? "..." : ""),
+      content: item.text,
+    }));
+
+    pendingSelected = validItems.map((item, i) => ({
+      idx: i,
+      imageType: item.imageType || "empathy_scene",
+      refId: item.refId,
+    }));
+
+    // Build prompt cards (same as split mode)
+    promptCards.innerHTML = "";
+    pendingSelected.forEach((s, i) => {
+      const sec = sections[s.idx];
+      const typeInfo = IMAGE_TYPES[s.imageType] || {};
+      const refImg = s.refId ? getRefImages().find(r => r.id === s.refId) : null;
+
+      const card = document.createElement("div");
+      card.className = "prompt-card";
+      card.dataset.pendingIndex = i;
+
+      let refPreviewHTML = "";
+      if (refImg?.dataUrl) {
+        const refTypeName = IMAGE_TYPES[refImg.subtype]?.name || refImg.subtype;
+        refPreviewHTML = `<div class="prompt-card-ref-preview">
+          <img src="${refImg.dataUrl}" alt="ref">
+          <span>参考画像: ${esc(refTypeName)}</span>
+        </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="prompt-card-header">
+          <span class="pc-num">${i + 1}</span>
+          <span class="pc-title">${esc(sec.title)}</span>
+          <span class="pc-type">${esc(typeInfo.name || "")}</span>
+          ${refImg ? '<span class="pc-ref">参考画像あり</span>' : ""}
+        </div>
+        <div class="prompt-card-body">
+          <div class="pc-copy">${esc(sec.content)}</div>
+          ${refPreviewHTML}
+          <textarea class="pc-prompt" data-index="${i}">${esc(DEFAULT_PROMPT)}</textarea>
+        </div>
+      `;
+      promptCards.appendChild(card);
+    });
+
+    showStep("step2half");
+  });
+
   // --- Step 1: Upload ---
+  document.getElementById("backToMode1Btn").addEventListener("click", () => showStep("step0"));
   uploadArea.addEventListener("click", () => fileInput.click());
   uploadArea.addEventListener("dragover", (e) => { e.preventDefault(); uploadArea.classList.add("dragover"); });
   uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
@@ -640,6 +963,10 @@ document.addEventListener("DOMContentLoaded", () => {
   splitBtn.addEventListener("click", async () => {
     const text = articleText.value.trim();
     if (!text) return;
+    const origLabel = splitBtn.textContent;
+    splitBtn.disabled = true;
+    splitBtn.classList.add("loading");
+    splitBtn.innerHTML = `<span class="btn-spinner"></span>分析中...`;
     showLoading("記事を文脈ごとに細かく分析中...");
     try {
       const prompt = `以下の記事広告の原稿を、できるだけ細かい意味的なまとまり（文脈）ごとに分割してください。
@@ -671,12 +998,18 @@ ${text}`;
       showStep("step2");
     } catch (err) {
       showError(stepsEl.step1.querySelector(".step-content"), err.message);
-    } finally { hideLoading(); }
+    } finally {
+      hideLoading();
+      splitBtn.disabled = false;
+      splitBtn.classList.remove("loading");
+      splitBtn.textContent = origLabel;
+    }
   });
 
   // ============================
   // Step 2: Section editing
   // ============================
+  document.getElementById("backToStep1Btn").addEventListener("click", () => showStep("step1"));
   function buildTypePickerHTML(uid) {
     const categories = {};
     for (const [key, t] of Object.entries(IMAGE_TYPES)) {
@@ -987,7 +1320,7 @@ ${sec.content}`;
     showStep("step2half");
   });
 
-  backToSectionsBtn.addEventListener("click", () => showStep("step2"));
+  backToSectionsBtn.addEventListener("click", () => showStep(currentMode === "direct" ? "stepDirect" : "step2"));
 
   // Step 2.5 → Step 3: Execute generation (direct to image model, like creative-generator)
   executeGenerateBtn.addEventListener("click", async () => {
@@ -1246,7 +1579,7 @@ ${typeInfo.prompt}
   });
 
   // --- Navigation ---
-  backBtn.addEventListener("click", () => showStep("step2"));
+  backBtn.addEventListener("click", () => showStep(currentMode === "direct" ? "stepDirect" : "step2"));
 
   // --- Helpers ---
   function showStep(id) { Object.values(stepsEl).forEach(s => s.classList.remove("active")); stepsEl[id].classList.add("active"); window.scrollTo({ top: 0, behavior: "smooth" }); }
