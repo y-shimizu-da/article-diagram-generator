@@ -762,7 +762,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDirectItems() {
     directItemsList.innerHTML = "";
     directItems.forEach((item, i) => {
-      const uid = `di${i}-${Date.now()}`;
       const div = document.createElement("div");
       div.className = "direct-item";
       div.dataset.directIndex = i;
@@ -774,10 +773,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="direct-item-body">
           <textarea class="di-text" data-index="${i}" placeholder="作図したい文章を入力してください...">${esc(item.text)}</textarea>
-          <div class="di-type-section">
-            <h4>画像タイプを選択</h4>
-            ${buildTypePickerHTML(uid)}
-          </div>
           <div class="di-ref-picker" id="di-refpicker-${i}"></div>
         </div>
       `;
@@ -791,21 +786,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // Remove button
       const removeBtn = div.querySelector("[data-remove]");
       if (removeBtn) removeBtn.addEventListener("click", () => removeDirectItem(i));
-
-      // Type radio change → show ref picker
-      const typeRadios = div.querySelectorAll(`input[name="dtype-${uid}"]`);
-      typeRadios.forEach(radio => {
-        radio.addEventListener("change", () => {
-          directItems[i].imageType = radio.value;
-          updateDirectRefPicker(i);
-        });
-      });
-
-      // Restore previously selected type
-      if (item.imageType) {
-        const savedRadio = div.querySelector(`input[type=radio][value="${item.imageType}"]`);
-        if (savedRadio) savedRadio.checked = true;
-      }
 
       directItemsList.appendChild(div);
 
@@ -835,31 +815,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
     picker.innerHTML = `
       <h4>参考画像を選択（任意）</h4>
+      <div class="ref-filters">
+        <select class="ref-filter-industry" data-section="${itemIdx}">
+          <option value="">業界: すべて</option>
+          ${REF_INDUSTRIES.map(ind => `<option value="${ind.id}">${ind.name}</option>`).join("")}
+        </select>
+        <select class="ref-filter-type" data-section="${itemIdx}">
+          <option value="">種別: すべて</option>
+          ${REF_SUBTYPES.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
+        </select>
+      </div>
       <div class="ref-grid" id="di-refgrid-${itemIdx}"></div>
     `;
 
-    const grid = picker.querySelector(`#di-refgrid-${itemIdx}`);
-    grid.innerHTML = allRefs.map(r => {
-      const indName = REF_INDUSTRIES.find(ind => ind.id === (r.industry || r.category))?.name || "";
-      const typeName = REF_SUBTYPES.find(t => t.id === (r.imageType || r.subtype))?.name || (r.imageType || r.subtype || "");
-      return `<div class="ref-thumb" data-ref-id="${r.id}" data-di-index="${itemIdx}">
-        <img src="${r.dataUrl}" alt="${r.subtype}">
-        <span class="ref-label">${esc(indName)} ${esc(typeName)}</span>
-      </div>`;
-    }).join("");
+    const savedRefId = directItems[itemIdx]?.refId || null;
 
-    grid.querySelectorAll(".ref-thumb").forEach(thumb => {
-      thumb.addEventListener("click", () => {
-        const wasSelected = thumb.classList.contains("selected");
-        grid.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
-        if (!wasSelected) {
-          thumb.classList.add("selected");
-          directItems[itemIdx].refId = thumb.dataset.refId;
-        } else {
-          directItems[itemIdx].refId = null;
-        }
+    function renderDiRefGrid() {
+      const indFilter = picker.querySelector(".ref-filter-industry").value;
+      const typeFilter = picker.querySelector(".ref-filter-type").value;
+      let filtered = allRefs;
+      if (indFilter) filtered = filtered.filter(r => (r.industry || r.category) === indFilter);
+      if (typeFilter) filtered = filtered.filter(r => (r.imageType || r.subtype) === typeFilter);
+
+      const grid = picker.querySelector(`#di-refgrid-${itemIdx}`);
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="ref-none">条件に合う画像がありません</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(r => {
+        const indName = REF_INDUSTRIES.find(ind => ind.id === (r.industry || r.category))?.name || "";
+        const typeName = REF_SUBTYPES.find(t => t.id === (r.imageType || r.subtype))?.name || (r.imageType || r.subtype || "");
+        const sel = r.id === savedRefId ? " selected" : "";
+        return `<div class="ref-thumb${sel}" data-ref-id="${r.id}" data-di-index="${itemIdx}">
+          <img src="${r.dataUrl}" alt="${r.subtype}">
+          <span class="ref-label">${esc(indName)} ${esc(typeName)}</span>
+        </div>`;
+      }).join("");
+
+      grid.querySelectorAll(".ref-thumb").forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          const wasSelected = thumb.classList.contains("selected");
+          grid.querySelectorAll(".ref-thumb").forEach(t => t.classList.remove("selected"));
+          if (!wasSelected) {
+            thumb.classList.add("selected");
+            directItems[itemIdx].refId = thumb.dataset.refId;
+          } else {
+            directItems[itemIdx].refId = null;
+          }
+        });
       });
-    });
+    }
+
+    picker.querySelector(".ref-filter-industry").addEventListener("change", renderDiRefGrid);
+    picker.querySelector(".ref-filter-type").addEventListener("change", renderDiRefGrid);
+    renderDiRefGrid();
   }
 
   function updateDirectGenerateBtn() {
@@ -876,11 +885,9 @@ document.addEventListener("DOMContentLoaded", () => {
     directItemsList.querySelectorAll(".di-text").forEach(ta => {
       directItems[parseInt(ta.dataset.index)].text = ta.value;
     });
-    // Save current type selections
+    // Save current ref selections
     directItemsList.querySelectorAll(".direct-item").forEach(div => {
       const idx = parseInt(div.dataset.directIndex);
-      const checkedRadio = div.querySelector("input[type=radio]:checked");
-      if (checkedRadio) directItems[idx].imageType = checkedRadio.value;
       const selectedRef = div.querySelector(".ref-thumb.selected");
       if (selectedRef) directItems[idx].refId = selectedRef.dataset.refId;
     });
