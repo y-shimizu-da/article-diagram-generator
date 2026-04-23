@@ -362,6 +362,22 @@
       <span class="status" id="keyStatus"></span>
     </div>
 
+    <div class="api-key-bar">
+      <label>OpenAI API Key:</label>
+      <input type="password" id="openaiKeyInput" placeholder="sk-..." autocomplete="off">
+      <button class="btn-save-key" id="saveOpenAIKeyBtn">保存</button>
+      <span class="status" id="openaiKeyStatus"></span>
+    </div>
+
+    <div class="api-key-bar">
+      <label>画像生成モデル:</label>
+      <select id="imageModelSelect" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; background:#fff; cursor:pointer;">
+        <option value="gemini">Gemini 3.1 Flash Image</option>
+        <option value="gpt">GPT Image 2</option>
+      </select>
+      <span class="status" id="modelStatus" style="font-size:0.78rem; color:#666;"></span>
+    </div>
+
     <!-- Step 0: Mode Selection -->
     <section id="step0" class="step active">
       <div class="step-header">
@@ -543,6 +559,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiKeyInput = document.getElementById("apiKeyInput");
   const saveKeyBtn = document.getElementById("saveKeyBtn");
   const keyStatus = document.getElementById("keyStatus");
+  const openaiKeyInput = document.getElementById("openaiKeyInput");
+  const saveOpenAIKeyBtn = document.getElementById("saveOpenAIKeyBtn");
+  const openaiKeyStatus = document.getElementById("openaiKeyStatus");
+  const imageModelSelect = document.getElementById("imageModelSelect");
+  const modelStatus = document.getElementById("modelStatus");
   const uploadArea = document.getElementById("uploadArea");
   const fileInput = document.getElementById("fileInput");
   const articleText = document.getElementById("articleText");
@@ -623,6 +644,32 @@ document.addEventListener("DOMContentLoaded", () => {
     updateKeyStatus();
   });
   updateKeyStatus();
+
+  function getOpenAIKey() { return localStorage.getItem("openai_api_key") || ""; }
+  function updateOpenAIKeyStatus() {
+    const key = getOpenAIKey();
+    if (key) { openaiKeyStatus.textContent = "設定済み"; openaiKeyStatus.className = "status saved"; openaiKeyInput.value = key; }
+    else { openaiKeyStatus.textContent = "未設定"; openaiKeyStatus.className = "status empty"; }
+  }
+  saveOpenAIKeyBtn.addEventListener("click", () => {
+    const key = openaiKeyInput.value.trim();
+    if (key) localStorage.setItem("openai_api_key", key); else localStorage.removeItem("openai_api_key");
+    updateOpenAIKeyStatus();
+  });
+  updateOpenAIKeyStatus();
+
+  // --- Image Model Selection ---
+  function getSelectedImageModel() { return localStorage.getItem("image_model") || "gemini"; }
+  function updateModelStatus() {
+    const m = getSelectedImageModel();
+    imageModelSelect.value = m;
+    modelStatus.textContent = m === "gpt" ? "（参考画像は /images/edits 経由で使用）" : "（参考画像はインライン埋め込み）";
+  }
+  imageModelSelect.addEventListener("change", () => {
+    localStorage.setItem("image_model", imageModelSelect.value);
+    updateModelStatus();
+  });
+  updateModelStatus();
 
   // --- Gemini Text API (2.5 Flash for text tasks) ---
   async function callGeminiText(prompt, maxTokens = 16384) {
@@ -731,6 +778,112 @@ document.addEventListener("DOMContentLoaded", () => {
         throw err;
       }
     }
+  }
+
+  // --- GPT Image 2 (OpenAI) ---
+  async function callGPTImageDirect(parts) {
+    const apiKey = getOpenAIKey();
+    if (!apiKey) throw new Error("OpenAI APIキーが設定されていません。上部にOpenAI APIキーを入力してください。");
+
+    // Extract prompt text and reference image from parts (Gemini-format input)
+    let promptText = "";
+    let refImageBase64 = null;
+    let refMimeType = "image/png";
+    for (const p of parts) {
+      if (p.text) promptText += (promptText ? "\n\n" : "") + p.text;
+      else if (p.inlineData) {
+        refImageBase64 = p.inlineData.data;
+        refMimeType = p.inlineData.mimeType || "image/png";
+      }
+    }
+
+    console.log("[Image] Generating with gpt-image-2", refImageBase64 ? "(edits mode)" : "(generations mode)");
+
+    let response;
+    if (refImageBase64) {
+      // /images/edits with multipart form
+      const byteChars = atob(refImageBase64);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+      const ext = refMimeType.includes("jpeg") ? "jpg" : refMimeType.includes("webp") ? "webp" : "png";
+      const blob = new Blob([byteArray], { type: refMimeType });
+
+      const formData = new FormData();
+      formData.append("model", "gpt-image-2");
+      formData.append("prompt", promptText);
+      formData.append("n", "1");
+      formData.append("size", "1536x1024");
+      formData.append("quality", "high");
+      formData.append("image", blob, `ref.${ext}`);
+
+      response = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}` },
+        body: formData,
+      });
+    } else {
+      // /images/generations with JSON
+      response = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-image-2",
+          prompt: promptText,
+          n: 1,
+          size: "1536x1024",
+          quality: "high",
+        }),
+      });
+    }
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `GPT Image API Error: ${response.status}`;
+      if (response.status === 401) throw new Error("OpenAI APIキーが無効です。");
+      throw new Error(msg);
+    }
+    const data = await response.json();
+    const imageBase64 = data.data?.[0]?.b64_json;
+    if (!imageBase64) throw new Error("画像が生成されませんでした。");
+
+    return {
+      imageBase64,
+      mimeType: "image/png",
+      text: data.data?.[0]?.revised_prompt || "",
+    };
+  }
+
+  async function callGPTImageWithRetry(parts, maxRetries = 3) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await callGPTImageDirect(parts);
+      } catch (err) {
+        const isRetryable = err.message.includes("429")
+          || err.message.includes("500")
+          || err.message.includes("502")
+          || err.message.includes("503")
+          || err.message.includes("504")
+          || err.message.includes("画像が生成されませんでした");
+        if (attempt < maxRetries && isRetryable) {
+          const baseWait = 3000 * Math.pow(2, attempt);
+          const jitter = Math.random() * 2000;
+          console.log(`[GPT Retry] Attempt ${attempt + 1}/${maxRetries}, waiting ${Math.round((baseWait + jitter) / 1000)}s...`);
+          await new Promise(r => setTimeout(r, baseWait + jitter));
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
+  // --- Dispatcher: picks model based on selection ---
+  async function generateImageWithRetry(parts) {
+    const model = getSelectedImageModel();
+    if (model === "gpt") return await callGPTImageWithRetry(parts, 3);
+    return await callGeminiImageWithRetry(parts, 5);
   }
 
   // ============================
@@ -1364,7 +1517,7 @@ ${sec.content}`;
 
         progressText.textContent = `画像を生成中... (${completed + 1}/${pendingSelected.length}) ${section.title}`;
         const callParts = buildImageParts(oneMessage, typeInfo, refId, userPrompt);
-        const result = await callGeminiImageWithRetry(callParts, 5);
+        const result = await generateImageWithRetry(callParts);
 
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
@@ -1544,7 +1697,7 @@ ${typeInfo.prompt}
         const oneMessage = d._oneMessage || d.title;
 
         const callParts = buildImageParts(oneMessage, d._typeInfo, d._refId, newPrompt);
-        const result = await callGeminiImageWithRetry(callParts, 5);
+        const result = await generateImageWithRetry(callParts);
 
         const byteChars = atob(result.imageBase64);
         const byteArray = new Uint8Array(byteChars.length);
